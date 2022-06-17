@@ -829,7 +829,10 @@ Bài này dùng phép nhân trước khi tính toán, nên mình chăc chắn đ
 Kiểu `long` có 64 bit cho nên số lớn nhất sẽ là 2^63-1, sau khi lớn hơn giá trị này nó sẽ quay về -2^63, vậy nên ta sẽ tính toán giá trị hợp lí cho nó quay về 
 -1536092243306511225
 
-Mình có script như sau:
+Chuyển -1536092243306511225 sang số không dấu ta được 0xeaaeb43e477b8487
+
+Theo như tính chất của overflow, thì (0xeaaeb43e477b8487 + 2^64.n) sẽ là bội số của 26729, vậy nên mình có script như sau:
+
 ```py
 from ctypes import *
 i = 0
