@@ -524,6 +524,188 @@ Chạy thử thấy cái nút to quá, bấm thử ra flag luôn:))
 
 ![image](https://user-images.githubusercontent.com/88520787/174310346-e3b0c96e-1bf0-42ba-a9d2-fd7cc203d950.png)
 
+## Position
+
+![image](https://user-images.githubusercontent.com/88520787/174311267-1eeff0fa-5025-4aa8-835c-b2882bb46610.png)
+
+![image](https://user-images.githubusercontent.com/88520787/174311676-f7fb9ba3-4280-486d-ba33-ca6083ec7b6a.png)
+
+![image](https://user-images.githubusercontent.com/88520787/174311246-8735c204-32db-4831-9e58-7adc73f6fb58.png)
+
+Tiếp tục là một bài keygen nữa
+
+Lấy kinh nghiệm từ bài trước (Musicplayer), lần này mình check tab `import` và `string` trước và thứ mình cần tìm là chổ nào in ra `Wrong` hoặc là chổ nào sẽ nhận input của mình:
+
+![image](https://user-images.githubusercontent.com/88520787/174312296-b820aed7-1615-4c31-b9c5-6c9de50095de.png)
+
+Mình thấy có chổ `GetWinDowTextW`, xref tới xem những thằng nào gọi nó:
+
+![image](https://user-images.githubusercontent.com/88520787/174312530-f994a579-ee71-48a2-a27c-9f0ad6c779a6.png)
+
+![image](https://user-images.githubusercontent.com/88520787/174312705-c7a0556f-ea2a-4b3c-be7f-003806bfe4c7.png)
+
+Có 2 chổ gọi và lưu vào biến `v50` và `v51`, trong đó `v50` có check điều kiện là `[a-z]` nên mình khá chắc đây là name, còn lại là serial, mình đã đổi tên lại cho dễ nhìn
+
+![image](https://user-images.githubusercontent.com/88520787/174313331-9fa4dd20-f462-4ecc-aaa2-50d4abab0f98.png)
+
+Đoạn này thật ra chỉ check xem name có kí tự nào trùng nhau hay không thôi
+
+Rồi bây giờ mới bắt đầu check tên:
+
+![image](https://user-images.githubusercontent.com/88520787/174313917-72bd5b06-eef4-4105-9c06-2e2a926023ee.png)
+
+Mình ngẫm sơ qua 1 hồi thì, serial chỉ có thể có giá trị 6,7,8 vì điều kiện của kí tự đầu tiền luôn +5, kí tự tiếp theo +1
+
+
+Mình đã copy và sửa tên thành tên khác dễ hiểu hơn:
+
+```c
+c1 = (name[0] & 1) + 5;
+    c2 = ((name[0] & 0x10) != 0) + 5;
+    c3 = ((name[0] & 2) != 0) + 5;
+    c4 = ((name[0] & 4) != 0) + 5;
+    c5 = ((name[0] & 8) != 0) + 5;
+    c4_ = (name[1] & 1) + 1;
+    c3_ = ((name[1] & 0x10) != 0) + 1;
+    c2_ = ((name[1] & 2) != 0) + 1;
+    c1_ = ((name[1] & 4) != 0) + 1;
+    c5_ = ((name[1] & 8) != 0) + 1;
+    check += ((c1 + c1_)== 7 );
+    check += ((c5 + c5_)== 6 );
+    check += ((c3 + c3_)== 8 );
+    check += ((c4 + c4_)== 7 );
+    check += ((c2 + c2_)== 6 );
+```
+![image](https://user-images.githubusercontent.com/88520787/174314842-98bb1ebb-eb98-4027-894e-5c413cbbb9c7.png)
+
+Tương tự với kí tự thứ 3 và kí tự cuối cùng
+
+```c
+c6 = (name[2] & 1) + 5;
+    c7 = ((name[2] & 0x10) != 0) + 5;
+    c8 = ((name[2] & 2) != 0) + 5;
+    c9 = ((name[2] & 4) != 0) + 5;
+    c10 = ((name[2] & 8) != 0) + 5;
+    c9_ = (name[3] & 1) + 1;
+    c8_ = ((name[3] & 0x10) != 0) + 1;
+    c7_ = ((name[3] & 2) != 0) + 1;
+    c6_ = ((name[3] & 4) != 0) + 1;
+    c10_ = ((name[3] & 8) != 0) + 1;
+    check += ((c6 + c6_)== 7 );
+    check += ((c10 + c10_)== 7 );
+    check += ((c8 + c8_)== 7 );
+    check += ((c9 + c9_)== 7 );
+    check += ((c7 + c7_)== 6 );
+```
+
+Tổng hợp lại, mình có hàm check như sau:
+
+```c
+bool check(string name){
+    int c1,c2,c3,c4,c5,c1_,c2_,c3_,c4_,c5_,c6,c7,c8,c9,c10,c6_,c7_,c8_,c9_,c10_;
+    int check = 0;
+    c1 = (name[0] & 1) + 5;
+    c2 = ((name[0] & 0x10) != 0) + 5;
+    c3 = ((name[0] & 2) != 0) + 5;
+    c4 = ((name[0] & 4) != 0) + 5;
+    c5 = ((name[0] & 8) != 0) + 5;
+    c4_ = (name[1] & 1) + 1;
+    c3_ = ((name[1] & 0x10) != 0) + 1;
+    c2_ = ((name[1] & 2) != 0) + 1;
+    c1_ = ((name[1] & 4) != 0) + 1;
+    c5_ = ((name[1] & 8) != 0) + 1;
+    // 5 so dau cua serial
+    check += ((c1 + c1_)== 7 );
+    check += ((c5 + c5_)== 6 );
+    check += ((c3 + c3_)== 8 );
+    check += ((c4 + c4_)== 7 );
+    check += ((c2 + c2_)== 6 );
+    c6 = (name[2] & 1) + 5;
+    c7 = ((name[2] & 0x10) != 0) + 5;
+    c8 = ((name[2] & 2) != 0) + 5;
+    c9 = ((name[2] & 4) != 0) + 5;
+    c10 = ((name[2] & 8) != 0) + 5;
+    c9_ = (name[3] & 1) + 1;
+    c8_ = ((name[3] & 0x10) != 0) + 1;
+    c7_ = ((name[3] & 2) != 0) + 1;
+    c6_ = ((name[3] & 4) != 0) + 1;
+    c10_ = ((name[3] & 8) != 0) + 1;
+    //5 so sau cua serial
+    check += ((c6 + c6_)== 7 );
+    check += ((c10 + c10_)== 7 );
+    check += ((c8 + c8_)== 7 );
+    check += ((c9 + c9_)== 7 );
+    check += ((c7 + c7_)== 6 );
+    return check ==10;
+}
+```
+Giờ mình bruteforce 3 kí tự đầu của pass thôi, 26^3 chắc nhanh mà :>
+
+```c
+#include <bits/stdc++.h>
+using namespace std;
+bool check(string name){
+    int c1,c2,c3,c4,c5,c1_,c2_,c3_,c4_,c5_,c6,c7,c8,c9,c10,c6_,c7_,c8_,c9_,c10_;
+    int check = 0;
+    c1 = (name[0] & 1) + 5;
+    c2 = ((name[0] & 0x10) != 0) + 5;
+    c3 = ((name[0] & 2) != 0) + 5;
+    c4 = ((name[0] & 4) != 0) + 5;
+    c5 = ((name[0] & 8) != 0) + 5;
+    c4_ = (name[1] & 1) + 1;
+    c3_ = ((name[1] & 0x10) != 0) + 1;
+    c2_ = ((name[1] & 2) != 0) + 1;
+    c1_ = ((name[1] & 4) != 0) + 1;
+    c5_ = ((name[1] & 8) != 0) + 1;
+    // 5 so dau cua serial
+    check += ((c1 + c1_)== 7 );
+    check += ((c5 + c5_)== 6 );
+    check += ((c3 + c3_)== 8 );
+    check += ((c4 + c4_)== 7 );
+    check += ((c2 + c2_)== 6 );
+    c6 = (name[2] & 1) + 5;
+    c7 = ((name[2] & 0x10) != 0) + 5;
+    c8 = ((name[2] & 2) != 0) + 5;
+    c9 = ((name[2] & 4) != 0) + 5;
+    c10 = ((name[2] & 8) != 0) + 5;
+    c9_ = (name[3] & 1) + 1;
+    c8_ = ((name[3] & 0x10) != 0) + 1;
+    c7_ = ((name[3] & 2) != 0) + 1;
+    c6_ = ((name[3] & 4) != 0) + 1;
+    c10_ = ((name[3] & 8) != 0) + 1;
+    //5 so sau cua serial
+    check += ((c6 + c6_)== 7 );
+    check += ((c10 + c10_)== 7 );
+    check += ((c8 + c8_)== 7 );
+    check += ((c9 + c9_)== 7 );
+    check += ((c7 + c7_)== 6 );
+    return check ==10;
+}
+void brutePass(string name,int length,string set){
+    if (name.size()==length) return;
+    for (auto c:set){
+        string temp = name+ c;
+        if (check(temp) && temp[3]=='p'){
+            cout<<temp<<endl;
+            break;
+        }
+        brutePass(temp,length,set);
+    }
+}
+int main(){
+    string set = "abcdefghijklmnopqrstuvwxyz";
+    brutePass("",4,set);
+    return 0;
+}
+```
+Có 4 kết quả:
+
+![image](https://user-images.githubusercontent.com/88520787/174315558-22bce8ad-8c70-40e8-b1fd-26bc692c50c2.png)
+
+Thấy cái đầu hợp lí nhất nên thử luôn:
+
+![image](https://user-images.githubusercontent.com/88520787/174315709-986c6481-344f-4928-96f0-5c19d7e505c2.png)
+
 
 
 
