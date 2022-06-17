@@ -706,9 +706,142 @@ Thấy cái đầu hợp lí nhất nên thử luôn:
 
 ![image](https://user-images.githubusercontent.com/88520787/174315709-986c6481-344f-4928-96f0-5c19d7e505c2.png)
 
+# Direct3D FPS
 
+![image](https://user-images.githubusercontent.com/88520787/174316869-66684374-34f7-42e3-ba7c-fb0d35fe14ed.png)
 
+Adu tự nhiên có game fps chơi:)))
 
+Nhiệm vụ của mình là đi clear mấy con này, bắn nào hết thì có pass:>
+
+![image](https://user-images.githubusercontent.com/88520787/174319167-dd1c2e52-b490-47e0-8e8f-bd7dcaa57c37.png)
+
+Bắn xong mình cũng k thấy cái gì luôn:))
+
+Chơi zui xíu thôi, vào phân tích nào, thử tìm trong string mình có thấy cái này:
+
+![image](https://user-images.githubusercontent.com/88520787/174319773-34d278e0-58cb-40fa-9234-337583d4cd93.png)
+
+Mình trace ra thì thấy hàm `sub_4039C0` có gọi tới chổ này:
+```c
+int *sub_4039C0()
+{
+  int *result; // eax
+
+  result = &dword_409194;
+  while ( *result != 1 )
+  {
+    result += 132;
+    if ( (int)result >= (int)&unk_40F8B4 )
+    {
+      MessageBoxA(hWnd, aCkfkbulileEZf, "Game Clear!", 0x40u);
+      return (int *)SendMessageA(hWnd, 2u, 0, 0);
+    }
+  }
+  return result;
+}
+```
+Trong lúc xuất ra thông báo `Game Clear` thì cũng có kèm theo đoạn chuỗi này, nhưng nhìn có vẻ không ổn lắm:
+
+![image](https://user-images.githubusercontent.com/88520787/174320168-673747cd-88d4-48e6-bca9-b081674e6ecf.png)
+
+Mình thử xref thì thấy nó còn được đem đi xor, khác chắc là decryt
+
+![image](https://user-images.githubusercontent.com/88520787/174320281-1b4e1a97-8c4d-474a-b6f4-72b11c5fa066.png)
+
+```c
+int __thiscall sub_403400(void *this)
+{
+  int result; // eax
+  int v2; // edx
+
+  result = sub_403440(this);
+  if ( result != -1 )
+  {
+    v2 = dword_409190[132 * result];
+    if ( v2 > 0 )
+    {
+      dword_409190[132 * result] = v2 - 2;
+    }
+    else
+    {
+      dword_409194[132 * result] = 0;
+      data[result] ^= byte_409184[528 * result];
+    }
+  }
+  return result;
+}
+```
+Mình đã đổi tên biến thành data cho dễ nhìn, nó được lấy từng kí tự đem đi xor với các `byte_409184`, xem thử chổ `byte_409184+528 này có gì`
+
+![image](https://user-images.githubusercontent.com/88520787/174320674-1c5cb6c2-a6ca-4ef9-828e-0a754777b418.png)
+
+Mình thử dùng python có sẵn trong IDA thì được kết quả như này: (0x002D9184 là vị trí của byte_409184)
+```
+  Python>b = 0x002D9184 
+  Python>get_bytes(b,1)
+  b'\x00'
+  Python>get_bytes(b+518,1)
+  b'S'
+  Python>b = 0x002D9184
+  Python>get_bytes(b,1)
+  b'\x00'
+  Python>get_bytes(b+528,1)
+  b'\x04'
+  Python>get_bytes(b+528*2,1)
+  b'\x08'
+```
+Mình dự đoán được rằng byte_409184 sẽ là một mảng từ 0,4,8,12,16...rồi dùng đem xor với data có sẵn mà chúng ta đã thấy
+
+Minh viết scipt này để lấy data và `byte_409184` ra sau đó đem xor với nhau:
+
+```py
+data = 0x0407028 #data start address
+j =0
+for i in range(50):
+    print(chr(int.from_bytes(get_bytes(data+i,1),"big")^j),end = "")
+    j+=4
+```
+Dùng chức năng load script file của IDA để chạy file py:
+
+![image](https://user-images.githubusercontent.com/88520787/174325081-31fabc3b-ad36-4374-b29f-18593f2703a8.png)
+
+Kết quả là:
+
+![image](https://user-images.githubusercontent.com/88520787/174325163-7001307a-5fdd-4bf6-91cc-1c634a58b7f9.png)
+
+## Multiplicative
+
+Lần này ta sẽ rev file jar
+
+Mình dùng `jadx` để `decompile` ra:
+
+ ![image](https://user-images.githubusercontent.com/88520787/174328214-7d8ca6bf-1492-4587-a903-aa4af26c9855.png)
+
+Nhìn sơ qua thì source code khá đơn giản chỉ là nhận vào rồi kiểm tra, tuy nhiên nó không dễ như bình thường
+
+Mình đã thử
+
+![image](https://user-images.githubusercontent.com/88520787/174329285-a99e3944-9583-4a24-b989-9b235cef3d27.png)
+
+Bài này dùng phép nhân trước khi tính toán, nên mình chăc chắn đây là overflow luôn
+
+Kiểu `long` có 64 bit cho nên số lớn nhất sẽ là 2^63-1, sau khi lớn hơn giá trị này nó sẽ quay về -2^63, vậy nên ta sẽ tính toán giá trị hợp lí cho nó quay về 
+-1536092243306511225
+
+Mình có script như sau:
+```py
+from ctypes import *
+i = 0
+while True:
+    if ((2**64)*i + 0xeaaeb43e477b8487)%26729==0:
+        print((2**64)*i + 0xeaaeb43e477b8487)
+        break
+    i+=1
+print(c_int64(253087792599051741660295//26729))
+```
+Kết quả là
+`-8978084842198767761`
 
 
 
