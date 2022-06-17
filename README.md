@@ -226,3 +226,312 @@ input[4] = 88
 print("".join([chr(c) for c in input]))
 ```
 Password: `L1NUX`
+
+#Replace
+
+![image](https://user-images.githubusercontent.com/88520787/174284963-0859f88b-dafb-4d6a-b098-dbbdbcdcf444.png)
+
+Bài này vẫn là check password (chỉ được nhập vào kí tự là số), tuy nhiên khi mở IDA tìm hàm check thì mình không thấy, debug thử thì khi bấm `Check` nó bị lỗi như này:
+
+![image](https://user-images.githubusercontent.com/88520787/174285235-a266e0b8-f7fd-4793-bd35-51de2cf27808.png)
+
+`40466F: Lệnh tại 0x40466F tham chiếu bộ nhớ tại 0x601605CB. Không thể ghi bộ nhớ -> 601605CB`
+
+Thử nhập 1 số:
+
+![image](https://user-images.githubusercontent.com/88520787/174285824-52cce0b2-f316-41e7-896f-c20f44e4d489.png)
+
+Vẫn là lỗi lệnh ở vị trí `40466F`,mình tìm thử trong data:
+
+![image](https://user-images.githubusercontent.com/88520787/174286024-9f1e4bab-6457-42cd-a779-c1a26409649c.png)
+
+Tại đây chương trình thực hiện lệnh `call $+5` rất là lạ, mình đặt breakpoint và debug thử (input để trống):
+
+![image](https://user-images.githubusercontent.com/88520787/174287105-d55df6d0-6ef2-4f31-a03d-b654b4f0c9dc.png)
+
+Sau khi tắt debug, chạy lại với input = 4567, mình để ý `dword_4084D0` nó sẽ có giá trị thay đổi dựa theo input, cụ thể là input+2 và được cộng với `601605C7h`:
+
+![image](https://user-images.githubusercontent.com/88520787/174287785-ea396c0c-5db8-469c-b9dd-2812ed211ac6.png)
+
+Và nó được tăng thêm 2 lần trước khi được push và call (chổ `inc eax` và `inc dword_4084D0`)
+
+Nghĩa là lỗi kia do không thể tìm thấy offset chính xác để call, ta cần tính toán cụ thể để ra được đúng địa chỉ, qua tab string, ta có:
+
+![image](https://user-images.githubusercontent.com/88520787/174288099-8ca47fb5-3bd7-4138-b8b6-77c3e55e6bee.png)
+![image](https://user-images.githubusercontent.com/88520787/174291594-50aa5fcd-cc30-4d07-8152-5bef9b53224d.png)
+
+Địa chỉ chính xác của mình chính là `0x00401071`
+
+Hộp thoại báo lỗi của chương trìn khi mình không nhập gì là `0x601605CB`, khi mình nhập `4567` thì sẽ là `0x601617A2` chính là `0x601605CB+ hex(4567)`
+
+```
+input + 2 + 0x601605C7 + 2 = 0x00401071
+input = (0x00401071 - 2 - 2 - 0x601605C7) & 0xffffffff = 2687109798 // & với 0xffffffff chuyển thành số dương
+```
+![image](https://user-images.githubusercontent.com/88520787/174293047-7aec64c1-d211-4992-a3f0-a90fdcc6520d.png)
+
+`input = 2687109798`
+
+## ImagePrc
+
+Để xem đề cho cái gì đây
+
+![image](https://user-images.githubusercontent.com/88520787/174296085-4d4c8a99-08e2-4aa9-a280-a26bcc7373c8.png)
+
+![image](https://user-images.githubusercontent.com/88520787/174296333-fc740095-b230-41a6-81aa-13c0a268b970.png)
+
+Một cái file có thể vẽ lên xong còn có nút `Check`, hmmm, mình đoán là nó sẽ so sánh hình mình vẽ với data có sẵn, vậy giờ kím data đó ở đâu?
+
+Trước tiên mình thử tìm hàm `check`:
+```c
+int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
+{
+  int SystemMetrics; // eax
+  HWND Window; // eax
+  int v7; // [esp-1Ch] [ebp-64h]
+  struct tagMSG Msg; // [esp+4h] [ebp-44h] BYREF
+  WNDCLASSA WndClass; // [esp+20h] [ebp-28h] BYREF
+
+  ::hInstance = hInstance;
+  WndClass.cbClsExtra = 0;
+  WndClass.cbWndExtra = 0;
+  WndClass.hbrBackground = (HBRUSH)GetStockObject(0);
+  WndClass.hCursor = LoadCursorA(0, (LPCSTR)0x7F00);
+  WndClass.hInstance = hInstance;
+  WndClass.hIcon = LoadIconA(0, (LPCSTR)0x7F00);
+  WndClass.lpfnWndProc = sub_401130;
+  WndClass.lpszClassName = lpWindowName;
+  WndClass.lpszMenuName = 0;
+  WndClass.style = 3;
+  RegisterClassA(&WndClass);
+  v7 = GetSystemMetrics(1) / 2 - 75;
+  SystemMetrics = GetSystemMetrics(0);
+  Window = CreateWindowExA(
+             0,
+             lpWindowName,
+             lpWindowName,
+             0xCA0000u,
+             SystemMetrics / 2 - 100,
+             v7,
+             200,
+             150,
+             0,
+             0,
+             hInstance,
+             0);
+  ShowWindow(Window, 5);
+  if ( !GetMessageA(&Msg, 0, 0, 0) )
+    return Msg.wParam;
+  do
+  {
+    TranslateMessage(&Msg);
+    DispatchMessageA(&Msg);
+  }
+  while ( GetMessageA(&Msg, 0, 0, 0) );
+  return Msg.wParam;
+}
+```
+Trong Winmain có hàm `sub_401130` rất kì lạ, vào xem thử thì...
+
+```c
+case 1u:
+          DC = GetDC(hWnd);
+          hbm = CreateCompatibleBitmap(DC, 200, 150);
+          hdc = CreateCompatibleDC(DC);
+          h = SelectObject(hdc, hbm);
+          Rectangle(hdc, -5, -5, 205, 205);
+          ReleaseDC(hWnd, DC);
+          ::wParam = (WPARAM)CreateFontA(12, 0, 0, 0, 400, 0, 0, 0, 0x81u, 0, 0, 0, 0x12u, pszFaceName);
+          dword_4084E0 = (int)CreateWindowExA(
+                                0,
+                                ClassName,
+                                WindowName,
+                                0x50000000u,
+                                60,
+                                85,
+                                80,
+                                28,
+                                hWnd,
+                                (HMENU)0x64,
+                                hInstance,
+                                0);
+          SendMessageA((HWND)dword_4084E0, 0x30u, ::wParam, 0);
+          return 0;
+```
+
+Có chổ hàm `CreateCompatibleBitmap()` mình biết được kích thước tấm ảnh của mình và của chương trình là `200x150`
+
+```c
+if ( wParam == 100 )
+    {
+      GetObjectA(hbm, 24, pv);
+      memset(&bmi, 0, 0x28u);
+      bmi.bmiHeader.biHeight = cLines;
+      bmi.bmiHeader.biWidth = v16;
+      bmi.bmiHeader.biSize = 40;
+      bmi.bmiHeader.biPlanes = 1;
+      bmi.bmiHeader.biBitCount = 24;
+      bmi.bmiHeader.biCompression = 0;
+      GetDIBits(hdc, (HBITMAP)hbm, 0, cLines, 0, &bmi, 0);
+      v8 = operator new(bmi.bmiHeader.biSizeImage);
+      GetDIBits(hdc, (HBITMAP)hbm, 0, cLines, v8, &bmi, 0);
+      ResourceA = FindResourceA(0, (LPCSTR)101, (LPCSTR)0x18);
+      Resource = LoadResource(0, ResourceA);
+      v11 = LockResource(Resource);
+      v12 = 0;
+      v13 = v8;
+      v14 = v11 - (_BYTE *)v8;
+      while ( *v13 == v13[v14] )
+      {
+        ++v12;
+        ++v13;
+        if ( v12 >= 90000 )
+        {
+          sub_401500(v8);
+          return 0;
+        }
+      }
+      MessageBoxA(hWnd, Text, Caption, 0x30u);
+      sub_401500(v8);
+      return 0;
+    }
+```
+Còn đây sẽ là chổ so sánh từng `byte` với `bitmap` có sẵn, trước khi cmp thì hàm có dùng `GetDIBits,GetDIBits,FindResourceA,LoadResource`, xem như là lấy data lên trước khi so sánh, để xem được trong file có những vùng data nào thì mình dùng `ResourceHacker`:
+
+![image](https://user-images.githubusercontent.com/88520787/174300806-ef89e720-03d9-4a43-9100-88fe75e9535e.png)
+
+Rồi luôn, Nó đây, 0xFF đại diện cho màu trắng (màu sáng nhất) và ngược lại, giờ tì mình tìm cách để biến cái đống này thành bitmap có thể xem được
+
+Để xem được ta cần có file header đúng chuẩn với header của bitmap, mình có thể lê mạng copy và thay vào hoặc là tạo 1 file bitmap bằng paint (nhớ điều chỉnh độ phân giải là 200x150 trước khi lưu):
+
+![image](https://user-images.githubusercontent.com/88520787/174301231-8c2ccddb-dbbf-430c-be70-77b48823c380.png)
+
+Sau khi lưu, mở file bằng Hxd (hoặc hex editor bất kì để chỉnh sửa hex):
+
+![image](https://user-images.githubusercontent.com/88520787/174301746-4dd7b445-9bfa-46ac-88eb-93852c1df0de.png)
+
+Copy data từ bên ResourceHacker qua và lưu lại thành tấm ảnh hoàn chỉnh.Mở lên thử hehe
+
+![image](https://user-images.githubusercontent.com/88520787/174302263-5d2b5b3f-f0ca-4819-9e35-246fac069e84.png)
+
+`Key: GOT`
+
+## Music Player
+
+Không hiểu sao bài này lại là bài làm mình stuck nhiều nhất
+
+![image](https://user-images.githubusercontent.com/88520787/174303891-7ae9cf75-2fbd-4ba6-bdc6-e51390173817.png)
+
+Trong file ReadMe có nói rõ là bài này ta sẽ tìm hàm check và pass qua chổ đó:
+```
+This MP3 Player is limited to 1 minutes.
+You have to play more than one minute.
+
+There are exist several 1-minute-check-routine.
+After bypassing every check routine, you will see the perfect flag.
+```
+Khi chạy tới 1 phút sẽ có 1 cái MsBox hiện cái gì đó lên như thế này:
+
+![image](https://user-images.githubusercontent.com/88520787/174304052-73f1d28a-d5cf-4510-a404-7769f94ba959.png)
+
+Vì hàm và tên hàm rất lộn xộn, mình lay hoay mãi mà không tìm đc chổ check, ban đầu mình tìm `Msbox` nhưng cũng không thấy
+
+![image](https://user-images.githubusercontent.com/88520787/174304442-e1ac13c4-a76e-4180-8546-21f299a17a78.png)
+
+Chợt nhớ ra trong bài này có kèm theo 1 file `.dll`, vậy nên mình kiểm tra xem chương trình đã import những gì để sử dụng những, check thử tab import:
+
+![image](https://user-images.githubusercontent.com/88520787/174304807-6dd9d5e1-55e8-4536-a004-633c6c786fae.png)
+
+Mãi đến giờ thì mình mới thấy cái `WinAPI` này:))), giờ bấm đúp vào với dùng `xref`( bấm X) xem coi những thằng nào gọi nó:
+
+![image](https://user-images.githubusercontent.com/88520787/174305049-c5aa7d38-6579-4a47-baae-022714691a06.png)
+
+Một đống luôn:))
+
+Sau khi check và debug một hồi thì mình tìm được chổ cái `msbox 1??????` mà nó từng hiện lên là cái này:
+
+![image](https://user-images.githubusercontent.com/88520787/174305318-02bd256f-496f-479f-a85c-ed1e454d86a9.png)
+
+Mà để nhảy tới chổ này thì có câu điều kiện này:
+
+![image](https://user-images.githubusercontent.com/88520787/174305681-74d408ed-128b-491b-8c8f-184152b0b6da.png)
+
+Vì sau lệnh này, nó bắt buộc phải nhảy tới block khác, nếu không nó sẽ nhảy vào block chứa `Msbox fail`
+
+Trước đó nó có chổ `cmp eax, 60000` và cũng có nghĩa là cmp với `60000ms = 1p`, nếu lớn hơn thì không jump và đi vào `FAIL`, ngược lại thì jump.
+
+Để bypass lệnh mình dùng Plugin IDA do người Việt viết có tên là [keypatch](https://github.com/keystone-engine/keypatch), cho phép mình chỉnh sửa lệnh trực tiếp bằng tổ hợp phím `Ctrl + Alt + K`, mình đổi lệnh `jl` thành `jmp`:
+
+![image](https://user-images.githubusercontent.com/88520787/174306841-517627bd-5e68-4ef3-89b0-87647030aeae.png)
+
+![image](https://user-images.githubusercontent.com/88520787/174306980-f61985d8-01e6-45f4-a142-6197a1d2979d.png)
+
+Lưu vào input file và chạy thử:
+
+![image](https://user-images.githubusercontent.com/88520787/174307101-e3c98c61-a32c-49b1-af22-d3be6a19263a.png)
+
+Vẫn còn lỗi ạ, stuck tiếp :<<<, mình nghĩ là vẫn còn thêm chổ check nữa,
+
+Sau khi pass qua được chổ kia, mình lần theo `jmp` của nó thì thấy được thêm 1 chổ này:
+
+![image](https://user-images.githubusercontent.com/88520787/174307455-d277f084-9169-45b2-baa0-d963063a25db.png)
+
+```call    ds:__vbaHresultCheckObj```
+
+Chắc chổ này phá cái bài của mình, làm tương tự như bước trên, mình pass qua cái check này bằng lệnh `jmp` luôn:
+
+![image](https://user-images.githubusercontent.com/88520787/174307735-bf87074e-a1c9-4c2b-a032-9c40228af217.png)
+
+![image](https://user-images.githubusercontent.com/88520787/174307803-6a4d44e2-15a3-4e72-806e-1665772b361d.png)
+
+Chạy thử lần nữa:
+
+![image](https://user-images.githubusercontent.com/88520787/174307945-d3a70636-e598-43d7-8a37-47f62d0d5980.png)
+
+File lần này chạy mượt lắm nha, không có lỗi gi:)))
+
+## CSHOP
+
+Bài này mình thấy khá dễ so với những bài ở trên, nhưng không hiểu sao lại ít người làm hơn
+
+![image](https://user-images.githubusercontent.com/88520787/174309513-cc1827e2-c3ea-4fc4-8007-1b7f306de652.png)
+
+Một cái file trắng tinh tươm.....
+
+![image](https://user-images.githubusercontent.com/88520787/174308938-472716fa-e8e2-425f-a944-dd45f1d2dda2.png)
+
+Bài này là dotNet nên mình đã dùng [dnSpy](https://github.com/dnSpy/dnSpy) để phân tích:
+
+![image](https://user-images.githubusercontent.com/88520787/174309235-e47dd68d-a6b6-4e95-a887-40e96f0e0976.png)
+
+Theo kinh nghiệm của mình code của bài này đã bị obfuscate, ban đầu mình nghĩ là sẽ unobfuscate trước sau đó phân tích sau, nhưng khi đọc sơ qua thì mình thấy có 1 chổ hơi bất ổn:
+
+![image](https://user-images.githubusercontent.com/88520787/174309728-0d6f0712-3de7-40de-96f4-e0af47e046e2.png)
+
+![image](https://user-images.githubusercontent.com/88520787/174309814-741aee6f-c3d9-44d4-be15-b06d2025274c.png)
+
+Đây là một cái `button` nhưng mà sao lại set size bằng 0,0 thế kia, mình thử chỉnh size to hơn một tí:
+
+![image](https://user-images.githubusercontent.com/88520787/174309976-49fdbfd7-5bb8-4c15-ba09-73976e0eb44a.png)
+
+![image](https://user-images.githubusercontent.com/88520787/174310045-215cf9cc-cac7-4fc4-87c6-b7cbccfa2740.png)
+
+Sửa thành 100,100 sau đó lưu file lại
+
+![image](https://user-images.githubusercontent.com/88520787/174310141-a3bfc71c-a639-4982-9dd5-e47eb151c00c.png)
+
+Chạy thử thấy cái nút to quá, bấm thử ra flag luôn:))
+
+![image](https://user-images.githubusercontent.com/88520787/174310346-e3b0c96e-1bf0-42ba-a9d2-fd7cc203d950.png)
+
+
+
+
+
+
+
+
+
+
+
+
