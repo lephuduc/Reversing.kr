@@ -1,5 +1,5 @@
 # Reversing.kr Write-up 
-## Easy Crack
+## Easy Crack - 100pts
 
 Nếu các bạn chưa có tools vui lòng xem qua [Write-up PicoCTF2022]() để down tools về
 
@@ -34,7 +34,7 @@ Dựa theo bảng ASCII và thứ tự các kí tự, ta truy xuất được pa
 
 ![image](https://user-images.githubusercontent.com/88520787/174269389-2692b964-ab7c-4e44-83b6-5acaaab9d4fd.png)
 
-## Easy Keygen
+## Easy Keygen - 100pts
 Đề cho ta 1 file `Readme.txt` và 1 file `Easy Keygen.exe`
 
 ![image](https://user-images.githubusercontent.com/88520787/174270121-3b063329-603a-4710-a519-53300fc89bdb.png)
@@ -106,7 +106,7 @@ for i in range(8):
 ```
 `Name: K3yg3nm3` 
 
-## Easy Unpack
+## Easy Unpack - 100pts
 
 Trong Reverse Engineering có 1 kĩ thuật tên là Unpack, nghĩa là file bị pack sẽ khiến ta không thể còn đọc code như bình thường nữa:
 
@@ -139,7 +139,7 @@ Tại khúc này mình thấy nó `jmp` thẳng từ dưới lên location 0x401
 
 `OEP:00401150`
 
-##Easy ELF
+## Easy ELF - 100pts
 
 Tương tự với file `exe` trên Windows, `ELF` sẽ là file thực thi trên hệ điều hành Linux
 
@@ -227,7 +227,7 @@ print("".join([chr(c) for c in input]))
 ```
 Password: `L1NUX`
 
-#Replace
+## Replace - 150pts
 
 ![image](https://user-images.githubusercontent.com/88520787/174284963-0859f88b-dafb-4d6a-b098-dbbdbcdcf444.png)
 
@@ -272,7 +272,7 @@ input = (0x00401071 - 2 - 2 - 0x601605C7) & 0xffffffff = 2687109798 // & với 0
 
 `input = 2687109798`
 
-## ImagePrc
+## ImagePrc - 120pts
 
 Để xem đề cho cái gì đây
 
@@ -416,7 +416,7 @@ Copy data từ bên ResourceHacker qua và lưu lại thành tấm ảnh hoàn c
 
 `Key: GOT`
 
-## Music Player
+## Music Player - 150pts
 
 Không hiểu sao bài này lại là bài làm mình stuck nhiều nhất
 
@@ -490,7 +490,7 @@ Chạy thử lần nữa:
 
 File lần này chạy mượt lắm nha, không có lỗi gi:)))
 
-## CSHOP
+## CSHOP - 120pts
 
 Bài này mình thấy khá dễ so với những bài ở trên, nhưng không hiểu sao lại ít người làm hơn
 
@@ -524,7 +524,7 @@ Chạy thử thấy cái nút to quá, bấm thử ra flag luôn:))
 
 ![image](https://user-images.githubusercontent.com/88520787/174310346-e3b0c96e-1bf0-42ba-a9d2-fd7cc203d950.png)
 
-## Position
+## Position - 160pts
 
 ![image](https://user-images.githubusercontent.com/88520787/174311267-1eeff0fa-5025-4aa8-835c-b2882bb46610.png)
 
@@ -706,7 +706,7 @@ Thấy cái đầu hợp lí nhất nên thử luôn:
 
 ![image](https://user-images.githubusercontent.com/88520787/174315709-986c6481-344f-4928-96f0-5c19d7e505c2.png)
 
-# Direct3D FPS
+# Direct3D FPS - 140pts
 
 ![image](https://user-images.githubusercontent.com/88520787/174316869-66684374-34f7-42e3-ba7c-fb0d35fe14ed.png)
 
@@ -810,7 +810,7 @@ Kết quả là:
 
 ![image](https://user-images.githubusercontent.com/88520787/174325163-7001307a-5fdd-4bf6-91cc-1c634a58b7f9.png)
 
-## Multiplicative
+## Multiplicative - 170pts
 
 Lần này ta sẽ rev file jar
 
