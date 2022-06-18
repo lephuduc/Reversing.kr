@@ -880,7 +880,8 @@ Lưu thành file mới và đưa vào `IDA` xem thử nào:
 Đây là hàm main, phía trên còn có khúc `pusha` `popa` rất nhiều, tạm thời ta không cần quan tâm
 
 Để ý các bạn có thể thấy, chương trình có đoạn dùng fopen mở file có tên là `file`, mode là `rb`, nghĩa là đọc bytes từ file mà đề cho
-![image](https://user-images.githubusercontent.com/88520787/174447891-7436a71d-31b1-4bfb-8d06-f2be2154eb02.png)
+
+![image](https://user-images.githubusercontent.com/88520787/174448790-aec21cbb-adff-466a-85d6-0d882ba384f2.png)
 
 Trong suốt chương trình thì ta luôn thấy nó gọi tới hàm `sub_401000`, nhưng mà nội dung của nó cũng k có gì đặc biệt, ta bỏ qua tiếp
 
