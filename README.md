@@ -846,10 +846,101 @@ print(c_int64(253087792599051741660295//26729))
 Kết quả là
 `-8978084842198767761`
 
+## ransomware - 120pts
+
+Còn về phần bài này, đề cho 1 `file` và 1 file `run.exe`, và file readme có nói rõ:
+
+![image](https://user-images.githubusercontent.com/88520787/174447216-4d87a54f-863f-4d9b-b7f9-77099a1acd51.png)
+
+Vì đề bài là ransomware(1 loại virus phá hoại) mình biết là bằng cách nào đó, cái file này đã làm mã hóa `file` khiến cho nó không thể hoạt động được:
+
+![image](https://user-images.githubusercontent.com/88520787/174447530-ef62a808-b867-4c99-a0c7-ad5149f3f6fa.png)
+
+Còn đây là file exe, sau khi nhập key bừa thì mình phát hiện `file` đã bị thay đổi nội dung:
+
+![image](https://user-images.githubusercontent.com/88520787/174447602-5fa9e63d-4181-4859-86b3-7caf78d774b2.png)
+
+![image](https://user-images.githubusercontent.com/88520787/174447627-d60eaf5f-6774-4826-bf4f-88ae58261d15.png)
+
+Giờ nhiệm vụ của mình là tìm đúng key để giải mã cái đống này thôi:>
+
+![image](https://user-images.githubusercontent.com/88520787/174447651-630560f8-614d-4aa6-ae35-c79fe8a34242.png)
+
+File `run.exe` là file đã packed, mình dùng extentions có sẵn của `CFF Explorer` để unpack nó:
+
+![image](https://user-images.githubusercontent.com/88520787/174447704-b0b0ac42-53c6-4dc7-82a4-affa201969fb.png)
+
+Lưu thành file mới và đưa vào `IDA` xem thử nào:
+
+![image](https://user-images.githubusercontent.com/88520787/174447752-11eb765c-0576-4cb6-99aa-b1bba54c0720.png)
+
+![image](https://user-images.githubusercontent.com/88520787/174447778-46b1592a-0931-43e1-bfc7-44d648560ebf.png)
 
 
+Đây là hàm main, phía trên còn có khúc `pusha` `popa` rất nhiều, tạm thời ta không cần quan tâm
 
+Để ý các bạn có thể thấy, chương trình có đoạn dùng fopen mở file có tên là `file`, mode là `rb`, nghĩa là đọc bytes từ file mà đề cho
+![image](https://user-images.githubusercontent.com/88520787/174447891-7436a71d-31b1-4bfb-8d06-f2be2154eb02.png)
 
+Trong suốt chương trình thì ta luôn thấy nó gọi tới hàm `sub_401000`, nhưng mà nội dung của nó cũng k có gì đặc biệt, ta bỏ qua tiếp
+
+![image](https://user-images.githubusercontent.com/88520787/174447923-3a15e1b4-1dd6-48bb-9514-7744ef932ced.png)
+
+Quay trở lại vấn đề chính, sau khi gọi lệnh đọc file, thì đoạn này chương trình sẽ có vòng lặp lấy từng byte của file sau đó lưu vào `byte_5415B8`:
+
+![image](https://user-images.githubusercontent.com/88520787/174448009-d749410e-e452-4334-b8e9-2ca08427243c.png)
+
+Sau khi đọc hết file, chương trình nhảy tới đoạn `loc_44A8A5`
+
+![image](https://user-images.githubusercontent.com/88520787/174448050-509e7a1b-a31f-44aa-a283-a3d0aa89c43b.png)
+
+Qua quá trình debug thì mình mới biết `[ebp+var_8]` sẽ là biến đếm từ 0 tới `[ebp+var_10]`(độ dài của `file`), nếu nhỏ hơn thì tiếp tục vòng lặp, tạm gọi là `i` và `n`.
+
+![image](https://user-images.githubusercontent.com/88520787/174448177-2e49835c-02d2-445a-86a4-824c7cf3bd55.png)
+
+Đoạn này có 3 lệnh `xor`, tuy nhiên khúc `xor` đầu tiên chỉ là để clear thanh ghi `edx`, ngoài ra còn có đoạn dùng `div` cho `[ebp+var_C]` (độ dài của key từ người dùng), `div` sẽ lấy `eax` chia cho thanh ghi toán hạng nguồn, sau đó lưu số dư vào `edx`.
+
+```
+movsx   edx, byte_44D370[edx]
+```
+byte_44D370 chính là key của người dùng nhập vào,
+
+Sau đó các file bytes của chúng ta còn được `xor` với 0xFF, tổng kết lại, mình đọc được đoạn nó encrypt như sau:
+```c
+byte[i] = byte[i]^key[i%len(key)]^0xFF
+```
+Trong đó `key` và `len(key)` đều không biết được, nên là mình đã nghĩ tởi bruteforce key, nhưng không được :V
+
+Mình đã thử lấy file gốc `xor` với `0xFF` trước:
+
+```py
+b = bytearray(open('file', 'rb').read())
+for i in range(len(b)):
+    b[i] = b[i]^0xFF
+open('file_new', 'wb').write(b)
+```
+
+Mở `file_new` bằng HxD, mình thấy có vài thứ hay ho:
+
+![image](https://user-images.githubusercontent.com/88520787/174448552-079ad4c5-c1b5-4de8-b668-deb408ce8a0c.png)
+
+Mình thấy có 1 đoạn text có thể đọc được và lặp đi lặp lại rất nhiều lần, chắc chắn đây là key luôn, thử nhập vào file `run.exe`:
+
+![image](https://user-images.githubusercontent.com/88520787/174448601-8b61888f-c259-4ff9-885f-58bd2c36bcf4.png)
+
+Mở `file` lên thử:
+
+![image](https://user-images.githubusercontent.com/88520787/174448620-81ba3592-4357-46a4-8ca1-a2518cbb9189.png)
+
+Có vẻ như là key đúng rồi, nhưng mà sao để chạy file này đây?
+
+![image](https://user-images.githubusercontent.com/88520787/174448677-4d6b4643-4528-4580-9cea-49a663f4393f.png)
+
+Dùng DiE thì mình thấy đây là file thực thi 32bits và packed, unpack và đưa vào ida xem thử:v
+
+![image](https://user-images.githubusercontent.com/88520787/174448711-8607cf41-db47-4620-93df-55f43ab56ae2.png)
+
+Có luôn:)) `Colle System`
 
 
 
