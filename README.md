@@ -1035,13 +1035,13 @@ Hàm `sub_2494` cũng có 1 vòng lặp, nhưng a2 = 1, nên ta xem như không 
 Code của hàm sẽ trông dễ hiểu hơn:
 
 ```c
-int sus(char c){
+int rotate(char c){
     c <<=1;
     if ( (c & 0x100) != 0 ) c |= 1u;
     return (unsigned __int8)c; // lấy 8 bits cuối
 }
 ```
-Cả đoạn này hiểu như sau: dịch 8 bits của kí tự sang trái, lấy bit đầu tiên thêm vào cuối, hay nói cách khác là `roll bits`, khi roll 4 lần thì 4 bits đầu thành 4 bits cuối và ngược lại, với data `bytes` có sẵn, mình có script để rev như sau:
+Cả đoạn này hiểu như sau: dịch 8 bits của kí tự sang trái, lấy bit đầu tiên thêm vào cuối, hay nói cách khác là `rotate bits`, khi rotate 4 lần thì 4 bits đầu thành 4 bits cuối và ngược lại, với data `bytes` có sẵn, mình có script để rev như sau:
 
 ```py
 b = [0x44, 0xF6, 0xF5, 0x57, 0xF5, 0xC6, 0x96, 0xB6, 0x56,0xF5, 0x14, 0x25, 0xD4, 0xF5, 0x96, 0xE6, 0x37, 0x47,0x27, 0x57, 0x36, 0x47, 0x96, 3, 0xE6, 0xF3, 0xA3,0x92]
