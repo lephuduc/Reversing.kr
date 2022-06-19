@@ -3,7 +3,9 @@
 **Trước hết bạn cần có các tools cần thiết để dùng reverse:**
 - IDA Pro
 - Detect it easy (DIE)
-- Máy ảo (Ubuntu 20.04 hoặc Kali Linux)
+- CTF Explorer
+- Resource Hacker
+- dnSpy
 
 ## Easy Crack - 100pts
 
