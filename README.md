@@ -1,7 +1,11 @@
 # Reversing.kr Write-up 
-## Easy Crack - 100pts
 
-Nếu các bạn chưa có tools vui lòng xem qua [PicoCTF-2022 WU](https://github.com/lephuduc/PicoCTF-2022) để down tools về
+**Trước hết bạn cần có các tools cần thiết để dùng reverse:**
+- IDA Pro
+- Detect it easy (DIE)
+- Máy ảo (Ubuntu 20.04 hoặc Kali Linux)
+
+## Easy Crack - 100pts
 
 Mở file lên thì ta biết đây là 1 file check password
 
