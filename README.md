@@ -1,7 +1,7 @@
 # Reversing.kr Write-up 
 ## Easy Crack - 100pts
 
-Nếu các bạn chưa có tools vui lòng xem qua [Write-up PicoCTF2022]() để down tools về
+Nếu các bạn chưa có tools vui lòng xem qua [PicoCTF-2022 WU](https://github.com/lephuduc/PicoCTF-2022) để down tools về
 
 Mở file lên thì ta biết đây là 1 file check password
 
