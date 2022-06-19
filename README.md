@@ -943,5 +943,114 @@ Dùng DiE thì mình thấy đây là file thực thi 32bits và packed, unpack 
 
 Có luôn:)) `Colle System`
 
+# HateIntel - 150pts
+
+Nghe tên bài và icons là mình biết bài này dùng cái gì luôn:
+
+![image](https://user-images.githubusercontent.com/88520787/174478661-2a12a2f0-f12b-46fb-b52e-96aed1e73d33.png)
+
+![image](https://user-images.githubusercontent.com/88520787/174478675-9f6b842e-9192-4eca-9cb4-0342b58e8e7f.png)
+
+File đề cho là file thực thi trên `macOS`, tuy nhiên file dùng compiler là `gcc` nên code vẫn là code C như thông thường, IDA hoàn toàn có thể hỗ trợ decompile:
+
+![image](https://user-images.githubusercontent.com/88520787/174478751-6224cad1-5aff-4784-8dc6-4ab630209174.png)
+
+`macOS` sẽ dùng kiến trúc `ARM (arm architecture)` thay vì `intel_x86,_x64` mà mấy bài trước chúng ta rev, tập lệnh của `ARM` có đặc điểm nhận diện là thường viết HOA hết các lệnh, nhưng mà đây chỉ là kiến thức thêm, trong phạm vi bài này, ta chỉ đọc code C thuần nên không quan tâm lắm, còn đây là hàm `main()`:
+
+```c
+int sub_2224()
+{
+  char __s[80]; // [sp+4h] [bp-5Ch] BYREF
+  int v2; // [sp+54h] [bp-Ch]
+  int v3; // [sp+58h] [bp-8h]
+  int i; // [sp+5Ch] [bp-4h]
+
+  v2 = 4;
+  printf("Input key : ");
+  scanf("%s", __s);
+  v3 = strlen(__s);
+  sub_232C(__s, v2);
+  for ( i = 0; i < v3; ++i )
+  {
+    if ( __s[i] != byte_3004[i] )
+    {
+      puts("Wrong Key! ");
+      return 0;
+    }
+  }
+  puts("Correct Key! ");
+  return 0;
+}
+```
+
+Chương trình lấy chuỗi của người dùng nhập vào, sau đó đưa vào hàm `sub_232C` (tạm gọi là hàm encrypt) xử lí, sau đó so sánh với các `byte` có sẵn trong data chương trình:
+
+![image](https://user-images.githubusercontent.com/88520787/174479003-3116bc2e-db87-41c5-9aac-8a741b3dee49.png)
+
+Vào trong hàm `encrypt` xem thử:
+
+```c
+signed __int32 __fastcall encrypt(signed __int32 result, int a2)
+{
+  char *__s; // [sp+4h] [bp-10h]
+  int i; // [sp+8h] [bp-Ch]
+  signed __int32 j; // [sp+Ch] [bp-8h]
+
+  __s = (char *)result;
+  for ( i = 0; i < a2; ++i )
+  {
+    for ( j = 0; ; ++j )
+    {
+      result = strlen(__s);
+      if ( result <= j )
+        break;
+      __s[j] = sub_2494((unsigned __int8)__s[j], 1);
+    }
+  }
+  return result;
+}
+```
+
+Hàm này duyệt qua chuỗi 4 lần (a2 = 4), mỗi lần từng kí tự sẽ được thay đổi bởi hàm `sub_2494`:
+
+```c
+int __fastcall sub_2494(unsigned __int8 a1, int a2)
+{
+  int v3; // [sp+8h] [bp-8h]
+  int i; // [sp+Ch] [bp-4h]
+
+  v3 = a1;
+  for ( i = 0; i < a2; ++i )
+  {
+    v3 *= 2;
+    if ( (v3 & 0x100) != 0 )
+      v3 |= 1u;
+  }
+  return (unsigned __int8)v3;
+}
+```
+
+Hàm `sub_2494` cũng có 1 vòng lặp, nhưng a2 = 1, nên ta xem như không có vòng lặp, ta chỉ quan tâm logic của hàm, mình thấy có đoạn `v3 |= 1u;` nên mình nghĩ hàm này sẽ xử lí thao tác bit:
+
+Code của hàm sẽ trông dễ hiểu hơn:
+
+```c
+int sus(char c){
+    c <<=1;
+    if ( (c & 0x100) != 0 ) c |= 1u;
+    return (unsigned __int8)c; // lấy 8 bits cuối
+}
+```
+Cả đoạn này hiểu như sau: dịch 8 bits của kí tự sang trái, lấy bit đầu tiên thêm vào cuối, hay nói cách khác là `roll bits`, khi roll 4 lần thì 4 bits đầu thành 4 bits cuối và ngược lại, với data `bytes` có sẵn, mình có script để rev như sau:
+
+```py
+b = [0x44, 0xF6, 0xF5, 0x57, 0xF5, 0xC6, 0x96, 0xB6, 0x56,0xF5, 0x14, 0x25, 0xD4, 0xF5, 0x96, 0xE6, 0x37, 0x47,0x27, 0x57, 0x36, 0x47, 0x96, 3, 0xE6, 0xF3, 0xA3,0x92]
+for byte in b:
+    last = byte>>4
+    first = byte&0xF
+    s = (first<<4) | last 
+    print(chr(s),end = "") #Do_u_like_ARM_instructi0n?:)
+```
+Result: `Do_u_like_ARM_instructi0n?:)`
 
 
