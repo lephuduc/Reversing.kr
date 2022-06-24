@@ -1059,4 +1059,204 @@ for byte in b:
 ```
 Result: `Do_u_like_ARM_instructi0n?:)`
 
+## x64 Lotto - 140pts
 
+![image](https://user-images.githubusercontent.com/88520787/175609167-9b0bb3c3-ffc9-41b0-aac8-e95cd718a205.png)
+![image](https://user-images.githubusercontent.com/88520787/175609094-948b13af-b68b-49a1-bac9-eb602665eec6.png)
+
+Đề cho mình 1 file PE64, sau khi nhập bừa thì màn hình quay về ban đầu và bắt nhập lại, thử đưa vào ida:
+
+```c
+__int64 wmain()
+{
+  unsigned int v0; // eax
+  __int64 i; // rbx
+  char v2; // r8
+  int v3; // edx
+  __int64 k; // rcx
+  _BYTE *v5; // rdx
+  __int64 j; // rcx
+  char v7; // al
+  int v8; // ecx
+  __int16 *v9; // rdx
+  __int16 v10; // ax
+  __int16 v11; // ax
+  int n1; // [rsp+40h] [rbp-78h] BYREF
+  int n2; // [rsp+44h] [rbp-74h] BYREF
+  int n3; // [rsp+48h] [rbp-70h] BYREF
+  int n4; // [rsp+4Ch] [rbp-6Ch] BYREF
+  int n5; // [rsp+50h] [rbp-68h] BYREF
+  int n6; // [rsp+54h] [rbp-64h] BYREF
+  int v19[3]; // [rsp+58h] [rbp-60h]
+  int v20; // [rsp+64h] [rbp-54h]
+  int v21; // [rsp+68h] [rbp-50h]
+  int v22; // [rsp+6Ch] [rbp-4Ch]
+  __int16 v23[25]; // [rsp+70h] [rbp-48h] BYREF
+  __int16 v24; // [rsp+A2h] [rbp-16h]
+
+  n1 = 0;
+  n2 = 0;
+  n3 = 0;
+  n4 = 0;
+  n5 = 0;
+  n6 = 0;
+  v19[0] = 0;
+  v19[1] = 0;
+  v19[2] = 0;
+  v20 = 0;
+  v21 = 0;
+  v22 = 0;
+  v0 = time64(0i64);
+  srand(v0);
+  do
+  {
+    wprintf(L"\n\t\tL O T T O\t\t\n\n");
+    wprintf(L"Input the number: ");
+    wscanf_s(L"%d %d %d %d %d %d", &n1, &n2, &n3, &n4, &n5, &n6);
+    wsystem(L"cls");
+    Sleep(500u);
+    for ( i = 0i64; i < 6; v19[i - 1] = rand() % 100 )
+      ++i;
+    v2 = 1;
+    v3 = 0;
+    k = 0i64;
+    byte_7FF658B935F0 = 1;
+    while ( v19[k] == *(&n1 + k * 4) )
+    {
+      ++k;
+      ++v3;
+      if ( k >= 6 )
+        goto LABEL_9;
+    }
+    v2 = 0;
+    byte_7FF658B935F0 = 0;
+LABEL_9:
+    ;
+  }
+  while ( v3 != 6 );
+  v5 = byte;
+  v23[1] = 92;
+  v23[0] = 184;
+  v23[2] = 139;
+  v23[5] = 184;
+  v23[3] = 107;
+  j = 0i64;
+  v23[4] = 66;
+  v23[6] = 56;
+  v23[7] = 237;
+  v23[8] = 219;
+  v23[9] = 91;
+  v23[10] = 129;
+  v23[11] = 41;
+  v23[12] = 160;
+  v23[13] = 126;
+  v23[14] = 80;
+  v23[15] = 140;
+  v23[16] = 27;
+  v23[17] = 134;
+  v23[18] = 245;
+  v23[19] = 2;
+  v23[20] = 85;
+  v23[21] = 33;
+  v23[22] = 12;
+  v23[23] = 14;
+  v23[24] = 242;
+  v24 = 0;
+  do
+  {
+    v7 = byte[j - 1];
+    j += 5i64;
+    *(&v20 + j + 1) ^= (v7 - 12);
+    *(&v21 + j) ^= (byte[j - 5] - 12);
+    *(&v21 + j + 1) ^= (byte[j - 4] - 12);
+    v23[j - 2] ^= (byte[j - 3] - 12);
+    v23[j - 1] ^= (byte[j - 2] - 12);
+  }
+  while ( j < 25 );
+  if ( v2 )
+  {
+    v8 = 0;
+    v9 = v23;
+    do
+    {
+      v10 = *v9++;
+      v11 = v8++ + (v10 ^ 0xF);
+      *(v9 - 1) = v11;
+    }
+    while ( v8 < 25 );
+    v24 = 0;
+    wprintf(L"%s\n", v23);
+  }
+  wprintf(L"\n", v5);
+  return 1i64;
+}
+```
+Mình đã đổi tên mọt số biến để dễ nhìn hơn, cụ thể là, chương trình bắt mình nhập 6 số:
+```c
+wscanf_s(L"%d %d %d %d %d %d", &n1, &n2, &n3, &n4, &n5, &n6);
+```
+Và sau đó 6 số này sẽ lần lượt được so sánh với 6 số ngẫu nhiên được khởi tạo:
+```c
+for ( i = 0i64; i < 6; v19[i - 1] = rand() % 100 )
+      ++i;
+```
+May mắn là, mình phát hiện 6 số này không sử dụng mục đích nào khác ngoài kiểm tra xem có đúng không, thế nên là mình bỏ qua luôn.
+
+Ngoài ra mình thấy có đoạn khởi tạo giá trị và decrypt password của mình:
+
+```c
+do
+  {
+    v7 = byte[j - 1];
+    j += 5i64;
+    *(&v20 + j + 1) ^= (v7 - 12);
+    *(&v21 + j) ^= (byte[j - 5] - 12);
+    *(&v21 + j + 1) ^= (byte[j - 4] - 12);
+    v23[j - 2] ^= (byte[j - 3] - 12);
+    v23[j - 1] ^= (byte[j - 2] - 12);
+  }
+  ```
+
+Thử đặt breakpoint chổ này để thiết lập cho nó thoát khỏi vòng lặp nhập input:
+
+![image](https://user-images.githubusercontent.com/88520787/175610913-3de9cae1-5428-427d-94a3-927d9733cd5c.png)
+
+![image](https://user-images.githubusercontent.com/88520787/175610933-e2d21af2-f6ad-475d-b5be-6ec818c64127.png)
+
+Chọn `Local windows debugger` và bắt đầu debug
+
+Sau khi nhập bừa 6 số, quay lại màn hình debug:
+
+![image](https://user-images.githubusercontent.com/88520787/175611420-349dddf4-748d-4247-8b1a-42166d470dc5.png)
+
+Chổ này chương trình kiểm tra xem 6 số có dúng hết không, nó đã dùng lệnh `jnz`, nếu không phải 0 (ZF = 0) thì sẽ jump tới chổ nhập input:
+
+![image](https://user-images.githubusercontent.com/88520787/175611472-e7a32dbb-64da-47fd-b5a4-fa21b7fae060.png)
+
+Để bypass chổ này, mình sửa ZeroFlag bằng 1:
+
+![image](https://user-images.githubusercontent.com/88520787/175611583-a39d8b38-a79c-4a32-9bb5-fe6c35e29828.png)
+
+![image](https://user-images.githubusercontent.com/88520787/175611608-e0e6628c-f398-4f52-8f33-7fd8ebb10c8a.png)
+
+Ngoài ra, sau khi decrypt vẫn còn 1 điều kiện khác nữa:
+
+![image](https://user-images.githubusercontent.com/88520787/175611728-fecbef61-ddbb-4de8-89be-2c025a793ba9.png)
+
+Đặt breakpoint và làm tương tự với chổ này:
+
+![image](https://user-images.githubusercontent.com/88520787/175611857-eaade76d-aaaf-47e7-80da-a21bbcee28a7.png)
+
+Lần này chương trình dùng lệnh `jz` (jump if zero, ZF = 1), chỉ cần sửa ngược lại so với lệnh ở trên là dc:
+
+![image](https://user-images.githubusercontent.com/88520787/175612049-36e1bda5-6ac8-40df-95ef-1f095c46b890.png)
+
+Chổ này chương trình sẽ in ra thứ gì đó có vẻ giống password:))
+
+![image](https://user-images.githubusercontent.com/88520787/175612195-4d1e8b1b-c408-4632-9c5f-e9d5999a3b2a.png)
+
+![image](https://user-images.githubusercontent.com/88520787/175612238-8a7613b6-ff5e-4784-8ccf-7242315cfa85.png)
+
+Password: `from_GHL2_-_!`
+
+Nói chung là bài này khá cơ bản, các bạn không cần phải rev hết chương trình, chỉ cần chú tâm đến vài chổ quan trọng thay đổi flow cả chương trình rồi rev từ đó ra là được, Chúc các bạn thành công
