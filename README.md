@@ -1260,3 +1260,64 @@ Chổ này chương trình sẽ in ra thứ gì đó có vẻ giống password:)
 Password: `from_GHL2_-_!`
 
 Nói chung là bài này khá cơ bản, các bạn không cần phải rev hết chương trình, chỉ cần chú tâm đến vài chổ quan trọng thay đổi flow cả chương trình rồi rev từ đó ra là được, Chúc các bạn thành công
+
+## AutoHotKey1 - 130pts
+
+![image](https://user-images.githubusercontent.com/88520787/175991963-e7a56564-5cde-4d1a-af28-8d46dad30097.png)
+
+
+![image](https://user-images.githubusercontent.com/88520787/175988385-30754bb2-f3e7-4d69-909b-d2c12e385d3c.png)
+
+Sau khi mình nhập input bừa thì chương trình dừng ngay lập tức
+
+Đề cho mình 1 file packed bằng UPX:
+
+![image](https://user-images.githubusercontent.com/88520787/175988332-8314608f-e5f2-4024-8da8-b1584377e437.png)
+
+Mình thử dùng UPX 3.96 để unpack file này ra nhưng sau khi chạy thì nó hiện thông báo lỗi: 
+
+![image](https://user-images.githubusercontent.com/88520787/175988655-619a140c-ab9b-4bfa-8da1-938b7c42a82b.png)
+
+Mình thử tìm trong string doạn `Exe corrupted` và xref thử thì có 2 hàm này dùng tới nó:
+
+![image](https://user-images.githubusercontent.com/88520787/175989019-e8e7a7a2-52f1-42f7-a8fb-77e81fafdd24.png)
+
+![image](https://user-images.githubusercontent.com/88520787/175989120-63f6e026-8e1e-4947-b8ac-5baf0b14cb0e.png)
+
+Dựa vào offset biết được, mình dùng x32dbg để debug file này và trace cho tới đoạn này:
+
+![image](https://user-images.githubusercontent.com/88520787/175989352-3875e997-d50a-423d-9612-4fa3661cc048.png)
+
+![image](https://user-images.githubusercontent.com/88520787/175989703-d99886c2-b522-46ba-845b-25b6e8befa92.png)
+
+Nhìn kĩ lên trên một chút thì ta thấy có đoạn `je` sẽ jump qua khỏi đoạn kiểm tra này, nên mình đặt breakpoint tại đấy và chỉnh `ZeroFlag = 1`:
+
+Sau khi pass qua được thì khi chạy 1 lúc, bạn sẽ thấy MD5 của `DecryptKey` xuất hiện:
+
+![image](https://user-images.githubusercontent.com/88520787/175990774-f55ea52d-1220-4f28-9ba8-941cd639434d.png)
+
+```220226394582d7117410e3c021748c2a```
+
+Decrypt MD5 bằng tool online (https://md5decrypt.net/), ta được:
+
+![image](https://user-images.githubusercontent.com/88520787/175991123-4fa3dc6d-1a35-453f-ab00-e5559a1614ed.png)
+
+Tìm nốt phần còn lại thôi:)))
+
+Lần này mình quay lại chương trình gốc, sau khi các đoạn code được mã hoắ, debug thì mình biết được chương trình sẽ thực hiện khi gọi hàm này:
+
+![image](https://user-images.githubusercontent.com/88520787/175991472-993dc768-6b0d-46a3-a7f7-6814eeac4fd0.png)
+
+Thử đặt breakpoint, step into là làm tương tự:
+
+![image](https://user-images.githubusercontent.com/88520787/175991645-4dd9d163-b4f2-42fa-9a8d-180fccaa2b44.png)
+
+![image](https://user-images.githubusercontent.com/88520787/175991722-602f71fa-98dd-47f1-88cf-057d1907df2d.png)
+
+Tới đây thì mình thấy được đoạn so sánh `pwd hash`, tương tự, decrypt md5 của đoạn này:
+```54593f6b9413fc4ff2b4dec2da337806```
+Kết quả:
+
+![image](https://user-images.githubusercontent.com/88520787/175992283-41bfeb4f-b13f-4531-9f32-6e1ac0df27ee.png)
+
+Password: `isolated pawn`
