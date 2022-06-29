@@ -1321,3 +1321,79 @@ Kết quả:
 ![image](https://user-images.githubusercontent.com/88520787/175992283-41bfeb4f-b13f-4531-9f32-6e1ac0df27ee.png)
 
 Password: `isolated pawn`
+
+## CSHARP - 160pts
+
+![image](https://user-images.githubusercontent.com/88520787/176389387-7534f063-0c8b-4dac-980d-1a44a4fca05f.png)
+
+Vì là Csharp nên mình dùng dnSpy64:
+
+![image](https://user-images.githubusercontent.com/88520787/176389614-781ee2a6-aa20-441b-a8bb-433cd44881fe.png)
+
+Sau khi file nhận input của mình thì nó sẽ chuyển thành bytes base64, và sau đó chạy qua hàm Invoke này để kiểm tra:
+
+![image](https://user-images.githubusercontent.com/88520787/176389941-f4ac457c-2648-4d38-b461-be7ccea95e9d.png)
+
+Đặt breakpoint tại chổ gọi hàm và debug:
+
+![image](https://user-images.githubusercontent.com/88520787/176390002-6e0008ae-8e7a-4894-8843-c51dc8790628.png)
+
+Bấm F11 để step into thân hàm:
+
+![image](https://user-images.githubusercontent.com/88520787/176390241-72b39f89-3be8-4801-a39b-ad62681c4936.png)
+
+Tiếp tục F11:
+
+![image](https://user-images.githubusercontent.com/88520787/176390449-cf4176d5-3500-4504-a4e0-2104853ebea2.png)
+
+Tại đây thì chương trình nó làm một vài thao tác check cơ bản nhưng nói chung là mình không quan tâm, chỉ quan tâm đoạn return của hàm:
+
+![image](https://user-images.githubusercontent.com/88520787/176390608-9a926d6c-c685-4356-8546-fdda92c60699.png)
+
+Step into:
+
+![image](https://user-images.githubusercontent.com/88520787/176390670-8ebfa3a1-7057-45d7-a827-b64e6d20036e.png)
+
+Trong hàm này, ta thấy có đoạn `RuntimeMethodHandle` khá đáng nghi, nên mình nghĩ chương trình này dùng hàm trong lúc chạy nên lúc trước mình không thể static analysis được:
+
+![image](https://user-images.githubusercontent.com/88520787/176391039-5a977ab3-7a75-4372-885a-4022caa80238.png)
+
+Step into:
+
+![image](https://user-images.githubusercontent.com/88520787/176391146-55176a9c-ad84-41cb-891f-fb767ab58fca.png)
+
+Copy qua python và chỉnh sửa lại:
+
+```py
+from base64 import b64decode
+flag = [0]*12
+flag[0] = 16 ^ 74
+
+flag[3] = 51 ^ 70
+
+flag[1] = 17 ^ 87
+
+flag[2] = 33 ^ 77
+
+flag[11] = 17 ^ 44
+
+flag[8] = 144 ^ 241
+
+flag[4] = 68 ^ 29
+
+flag[5] = 102 ^ 49
+
+flag[9] = 181 ^ 226
+
+flag[7] = 160 ^ 238
+
+flag[10] = 238 ^ 163
+
+flag[6] = 51 ^ 117
+print(b64decode("".join([chr(i) for i in flag])).decode())
+#dYnaaMic
+```
+
+![image](https://user-images.githubusercontent.com/88520787/176393006-bd072f64-f908-41cd-94f7-86eec8a3eac0.png)
+
+Password: `dYnaaMic`
