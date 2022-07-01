@@ -1531,11 +1531,12 @@ Vị trí của input là:
 ![image](https://user-images.githubusercontent.com/88520787/176859783-31cb7954-6cf8-4471-86df-ae91a3178e04.png)
 
 Tại đây ta sẽ tìm đc al = 0x77^0x35 = "B"; (Kí tự thứ 3)
+
 Khi debug, ta sẽ thấy có đoạn gọi hàm này:
 
 ![image](https://user-images.githubusercontent.com/88520787/176864410-1eb86c83-3caa-448e-ae64-cf2ff68999c7.png)
 
-Passqua đoạn này để không bị vướng vào debug trap:
+Pass qua đoạn này để không bị vướng vào debug trap:
 
 ![image](https://user-images.githubusercontent.com/88520787/176864834-0011a585-a3ca-4e35-a354-8fdaf4f1d6ff.png)
 
@@ -1543,6 +1544,7 @@ Passqua đoạn này để không bị vướng vào debug trap:
 Làm tương tự với các kí tự còn lại, ta được chuối tương ứng
 
 Input: `RIBENA`.
+
 Bài này tương đối khó, mình thật sự stuck rất nhiều ở bài này
 
 
