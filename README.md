@@ -1397,3 +1397,31 @@ print(b64decode("".join([chr(i) for i in flag])).decode())
 ![image](https://user-images.githubusercontent.com/88520787/176393006-bd072f64-f908-41cd-94f7-86eec8a3eac0.png)
 
 Password: `dYnaaMic`
+
+## Twist1 - 190pts
+
+![image](https://user-images.githubusercontent.com/88520787/176819235-fe72b7c4-1dc9-4b74-b2dc-319ac79ef7ee.png)
+
+![image](https://user-images.githubusercontent.com/88520787/176819384-a0fe4272-c901-4512-99b7-317accf1956a.png)
+
+Bài này sẽ thuộc dạng input-check cơ bản
+
+Thử đưa vào ida xem thử:
+
+![image](https://user-images.githubusercontent.com/88520787/176820275-d23ebccd-f8f7-4215-96b0-e4ecbd14b2c0.png)
+
+Rất ít hàm và cũng không tìm thấy OEP nên mình nghĩ là đây là một file packed bằng 1 cách nào đó 
+
+Khi chạy thì nó hiện ra lỗi như này:
+
+![image](https://user-images.githubusercontent.com/88520787/176822322-5716b239-4a1b-4367-b89f-713b384d4d03.png)
+
+Chương trình dừng ở ngay lệnh `pop ss`:
+
+![image](https://user-images.githubusercontent.com/88520787/176822419-77b43bc3-984c-41e8-9726-1c274193d4d7.png)
+
+Qua tìm hiểu thì mình biết thêm một số thứ về [pop ss](https://daehee87.tistory.com/23):
+
+> `pop ss` sẽ thực hiện lệnh tiếp theo và ngăn lệnh hiện tại cho tới khi lệnh tiếp theo được thực hiện
+
+
