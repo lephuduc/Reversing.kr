@@ -1449,8 +1449,106 @@ Như vậy địa chỉ cấu trúc của PEB sẽ là `0x332000`:
 
 ![image](https://user-images.githubusercontent.com/88520787/176843485-fe9419f1-32e5-49c5-bf09-fc438f8903b5.png)
 
-`edx` được mov giá trị 0 sau khi `ecx` được clear,sau đó nó sẽ được mov giá trị 0x28, kết quả này đem xor với 0x30 rồi được cộng trực tiếp vào eax hay địa chỉ của PEB:
+`edx` được mov giá trị 0 sau khi `ecx` được clear,sau đó nó sẽ được mov giá trị 0x28, kết quả này đem xor với 0x30 (result = 0x18) rồi được cộng trực tiếp vào eax hay địa chỉ của PEB, hay nói cách khác, nó được trỏ tới `địa chỉ của PEB + 0x18`.
 
-![image](https://user-images.githubusercontent.com/88520787/176843676-a82d8d8c-79de-4ea5-808c-1bca3a034fa5.png)
+Cấu trúc PEB được cấu hình hơi khác nhau trong các phiên bản x32 và x64 khác nhau. Trong trường hợp này, ta xét trên cấu trúc 32bit, trong trường hợp này, edx sẽ trỏ tới `ProcessHeap (PEB + 0x18)`.
+
+Tại trong `twist1.40709F`, ProcessHeap sẽ được cộng thêm 0xC và so sánh với `2`:
+
+![image](https://user-images.githubusercontent.com/88520787/176845230-20a187f2-8a9e-4307-b9f4-ade92dc0b008.png)
+
+> +0x000 Entry : _HEAP_ENTRY
+
+> +0x008 Signature : Uint4B
+
+> +0x00c Flags : Uint4B
+
+> +0x010 ForceFlags : Uint4B
+
+> +0x014 VirtualMemoryThreshold : Uint4B
+
+> +0x018 SegmentReverse : Uint4B
+
+> +0x01c SegmentCommit : Uint4B
+
+> +0x020 DecommitFreeBlockThreshold : Uint4B
+
+Vậy nó sẽ trỏ đến Flags, nên là đoạn so sánh sẽ xác minh rằng tiến trình đang chạy bình thường.
+
+Tương tự tại `004070D5` cũng sẽ có đoạn ProcessHeap + 0x10 để truy cập tới ForceFlags và xác minh tương tự.
+
+![image](https://user-images.githubusercontent.com/88520787/176846239-16057111-7cec-4c7e-81dd-b9c3a9db8a55.png)
+
+Để bypass qua đoạn test này, bạn cần chỉnh cho tanh ghi ecx có giá trị bằng với ebx:
+
+![image](https://user-images.githubusercontent.com/88520787/176846875-9103c54b-f7ce-47a4-9d36-628ae45dbb0e.png)
+
+Tiếp theo, ta có 1 đoạn khác là:
+
+![image](https://user-images.githubusercontent.com/88520787/176847528-bf7b4bea-6aba-4b43-a67a-cf24ffdff204.png)
+
+![image](https://user-images.githubusercontent.com/88520787/176847999-8fd3370a-52e8-466e-8f22-15d419831780.png)
+
+Lân này,con trỏ edx- 0x10 để quay về PEB gốc, sau đó chương trình dùng PEB + 0xC, nó sẽ trỏ tới `_PEB_LDR_DATA`, tiếp theo `_PEB_LDR_DATA + 0x10` để dùng `InInitializationOrderLinks`(dựa vào LDR_DATA_TABLE_ENTRY để tìm kiếm).
+
+Ldr thực hiện kiểm tra xem có đang debug hay không bằng cách liên tục so sánh với lại 0xEEFEEEFE hay 0xABABABAB không để check xem debugger có lắp đầy phần không sử dụng của heap bằng 0xABABABAB hoặc 0xEEFEEEFE hay không, cụ thể là nó so sánh 0x1F4 lần:
+
+![image](https://user-images.githubusercontent.com/88520787/176849317-fcf94f0b-f98d-408c-b8a5-6ee055c3d22a.png)
+
+Tại vị trí `407183` vẫn còn 1 vòng lặp, đặt breakpoint tại nop để thoát khỏi vòng lặp:
+
+![image](https://user-images.githubusercontent.com/88520787/176849709-901455cd-578c-49c9-91c7-c3f06be65143.png)
+
+Sau đó, chương trình nhảy tới `40157C` và dường như đây chính là entrypoint, tới đây, xem như chương trình đã được unpack hoàn toàn:
+
+![image](https://user-images.githubusercontent.com/88520787/176849975-22efff0e-c43c-41f4-a757-c565dd8e3491.png)
+
+Khi cho chương trình chạy tới lệnh tại vị trí `40129B` thì nó bị lỗi như này:
+
+![image](https://user-images.githubusercontent.com/88520787/176851410-68254567-b772-4fed-ab27-fecdcec20cae.png)
+
+![image](https://user-images.githubusercontent.com/88520787/176851427-627d699e-9cbf-4610-be3c-091bbe27f6ae.png)
+
+Nó nói rằng không thể tham chiếu đến địa chỉ hiện tại của edx, trên edx lại có 1 địa chỉ rất lạ, thử đổi thành địa chỉ kế tiếp của lệnh là `40129D`:
+
+![image](https://user-images.githubusercontent.com/88520787/176851553-b7a99faf-a641-48bc-b3b1-f897344b8966.png)
+
+Tiếp theo ta sẽ thấy chổ nhập input:
+
+![image](https://user-images.githubusercontent.com/88520787/176852219-7d235f90-8641-4608-abfa-a602df15d7e1.png)
+
+![image](https://user-images.githubusercontent.com/88520787/176852330-cb01d4ad-c9ad-4922-bd2b-6cd435113cfa.png)
+
+`twis1.401240` sẽ là hàm kiểm tra input của mình.
+Khi debug vào bên trong, tại đây mình sẽ thấy nơi chứa input của mình:
+
+![image](https://user-images.githubusercontent.com/88520787/176858799-458f2715-f3c4-4250-9642-9696d63a25c0.png)
+
+Vị trí của input là:
+
+![image](https://user-images.githubusercontent.com/88520787/176862526-2f1d57a9-d5ab-4932-984d-a9cd7d39a364.png)
+
+![image](https://user-images.githubusercontent.com/88520787/176859783-31cb7954-6cf8-4471-86df-ae91a3178e04.png)
+
+Tại đây ta sẽ tìm đc al = 0x77^0x35 = "B"; (Kí tự thứ 3)
+Khi debug, ta sẽ thấy có đoạn gọi hàm này:
+
+![image](https://user-images.githubusercontent.com/88520787/176864410-1eb86c83-3caa-448e-ae64-cf2ff68999c7.png)
+
+Passqua đoạn này để không bị vướng vào debug trap:
+
+![image](https://user-images.githubusercontent.com/88520787/176864834-0011a585-a3ca-4e35-a354-8fdaf4f1d6ff.png)
+
+
+Làm tương tự với các kí tự còn lại, ta được chuối tương ứng
+
+Input: `RIBENA`.
+Bài này tương đối khó, mình thật sự stuck rất nhiều ở bài này
+
+
+
+
+
+
 
 
