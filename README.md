@@ -1399,6 +1399,7 @@ print(b64decode("".join([chr(i) for i in flag])).decode())
 Password: `dYnaaMic`
 
 ## Twist1 - 190pts
+Bài này trong lúc mình đang làm khá stuck nên mình có thử tham khảo vài nguồn trên internet và làm như sau:
 
 ![image](https://user-images.githubusercontent.com/88520787/176819235-fe72b7c4-1dc9-4b74-b2dc-319ac79ef7ee.png)
 
@@ -1423,5 +1424,33 @@ Chương trình dừng ở ngay lệnh `pop ss`:
 Qua tìm hiểu thì mình biết thêm một số thứ về [pop ss](https://daehee87.tistory.com/23):
 
 > `pop ss` sẽ thực hiện lệnh tiếp theo và ngăn lệnh hiện tại cho tới khi lệnh tiếp theo được thực hiện
+
+ Ngoài ra, khi mình debug có thấy đoạn vòng lặp chổ `loc_407063`, khi chạy đoạn này thì các đoạn code lần lượt xuất hiện phía bên dưới, đây sẽ là đoạn decryot, nên mình đăt breakpoint tại `0040706F` để lấy được toàn bộ code hoàn thiện.
+ 
+ ![image](https://user-images.githubusercontent.com/88520787/176835355-952dfe1d-4e3a-48dc-8eca-5f43d514cc0d.png)
+
+Bài này sẽ thuần theo tên bài luôn, nó sẽ có rất nhiều kĩ thuật anti-debug phổ biến.
+
+Chuyển sang x32dbg, sau khi các đoạn code được decrypt, mình nhận thấy có một chổ `mov eax,dword ptr fs:[30]` kì lạ:
+
+![image](https://user-images.githubusercontent.com/88520787/176838660-e6575685-ca29-4fc7-8ade-151fccbf58a4.png)
+
+Vẫn là sau khi tim hiểu trên (stackoverflow)[https://stackoverflow.com/questions/14496730/mov-eax-large-fs30h], mình mới biết đây tiếp tục là một cơ chế antidebug.
+
+Đoạn này có nghĩa là eax được thiết lập để chỉ ra một điểm trong cấu trúc của PEB trong process.
+
+![image](https://user-images.githubusercontent.com/88520787/176841990-671e3a12-51f2-4e62-bf4b-98b6b418205e.png)
+
+Sau lệnh trên, eax có giá trị là:
+
+![image](https://user-images.githubusercontent.com/88520787/176843244-aecad1fe-3445-478b-baf3-9a429da35bd2.png)
+
+Như vậy địa chỉ cấu trúc của PEB sẽ là `0x332000`:
+
+![image](https://user-images.githubusercontent.com/88520787/176843485-fe9419f1-32e5-49c5-bf09-fc438f8903b5.png)
+
+`edx` được mov giá trị 0 sau khi `ecx` được clear,sau đó nó sẽ được mov giá trị 0x28, kết quả này đem xor với 0x30 rồi được cộng trực tiếp vào eax hay địa chỉ của PEB:
+
+![image](https://user-images.githubusercontent.com/88520787/176843676-a82d8d8c-79de-4ea5-808c-1bca3a034fa5.png)
 
 
