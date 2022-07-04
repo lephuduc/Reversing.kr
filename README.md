@@ -1619,22 +1619,17 @@ unsigned int ror(unsigned int x, int count) {
 //funtion : internet
 
 int main() {
-	unsigned int ans;
-
-	for (ans = 0; ans < 0xffffffff; ans++) {
-		unsigned int ebx = ans;
+	for (unsigned int i = 0; i < 0xffffffff; i++) {
+		unsigned int ebx = i;
 		unsigned int eax = 0xb7aac296;
 		unsigned int al = eax & 0xff;
-
 		ebx = rol(ebx, al % 32);
 		eax = eax ^ ebx;
 		unsigned int bh = (ebx & 0xffff) >> 8;
 		eax = ror(eax, bh % 32);
-
 		if (eax == 0x5a5a7e05)
-			printf("ebx : 0x%08x\n", ans);
+			printf("ebx : 0x%08x\n", i);
 	}
-
 	return 0;
 }
 ```
