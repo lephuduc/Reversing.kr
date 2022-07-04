@@ -1547,8 +1547,39 @@ Input: `RIBENA`.
 
 Bài này tương đối khó, mình thật sự stuck rất nhiều ở bài này
 
+## PEpassword - 150pts
 
+![image](https://user-images.githubusercontent.com/88520787/177202208-95da6640-4549-4521-a031-5b2a810d23ec.png)
 
+![image](https://user-images.githubusercontent.com/88520787/177202246-f6cdbaad-a872-48b3-8313-175f7f39a247.png)
+
+![image](https://user-images.githubusercontent.com/88520787/177202254-12bc92a3-adf5-4c3f-913a-3e242d65a7ba.png)
+
+### Original.exe:
+
+![image](https://user-images.githubusercontent.com/88520787/177202290-87c8d844-c219-4cd1-946e-509dd5497338.png)
+
+![image](https://user-images.githubusercontent.com/88520787/177202328-9acab6d6-a967-43fe-a698-3fadd23facca.png)
+
+File Original sẽ là file trước khi packed, cơ bản thì nó xor 2 mảng với nhau, còn đây là khi mình đặt breakpoint để xem giá trị nó trước khi print:
+
+![image](https://user-images.githubusercontent.com/88520787/177202486-41bfc631-1fe9-45e7-abd8-ea7bf918c241.png)
+
+Chỉ toàn là `?` (giống như lúc đầu, nên mình cũng không phân tích gì thêm)
+
+### Packed.exe:
+
+![image](https://user-images.githubusercontent.com/88520787/177202634-e1b691dc-4a40-4ae2-931d-8fa9e62b5aef.png)
+
+![image](https://user-images.githubusercontent.com/88520787/177202658-34e7554d-3912-40e7-ac2e-dce7a7111647.png)
+
+Vì là file packed nên là lúc đầu file bắt nhập pass, mình đoán là nó sẽ lấy pass này để decrypt cái file thành file gốc, file gốc đơn giản và không cần rev gì thêm
+
+Sau khi debug thì mình tìm được chổ để file nó lấy input của mình:
+
+![image](https://user-images.githubusercontent.com/88520787/177202777-af87812f-037f-4a49-ba7e-d874a7c56341.png)
+
+Mình đã đổi tên cho dễ nhìn 
 
 
 
