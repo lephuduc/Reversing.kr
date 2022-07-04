@@ -1579,9 +1579,20 @@ Sau khi debug thì mình tìm được chổ để file nó lấy input của m�
 
 ![image](https://user-images.githubusercontent.com/88520787/177202777-af87812f-037f-4a49-ba7e-d874a7c56341.png)
 
-Mình đã đổi tên cho dễ nhìn 
+Mình đã đổi tên cho dễ hiểu, tạm thời mình bỏ qua đoạn nhập pass word và đi thẳng đến đoạn nó lấy password xử lí bằng cách pass qua các lệnh `jz` bằng cách mod giá trị `ZF` và trace tới hàm process:
+
+![image](https://user-images.githubusercontent.com/88520787/177202969-034cc63d-0243-4a9a-b414-5e2bf50290c6.png)
+
+Hàm này sẽ lấy input của mình lưu vào ebx và eax để xử lí, nó sẽ thao tác hàng loạt giữa `eax` và `ebx`(4bits) và giá trị trả về của hàm này sẽ là `eax` (ebx cố định):
+
+![image](https://user-images.githubusercontent.com/88520787/177203119-2ac63f7b-2c96-4a27-87aa-23a44c70360e.png)
+
+Trong trường hợp này, return `eax` sẽ sử dụng giải mã cho đoạn 0x401004 và có giá trị là 0x5a5a7e05
+
+Và vì 1 lí do là sau khi xor eax với `.text` ở packed xong thì đoạn đó sẽ trở thành đoạn ở original, nên là mình dùng HxD để trace tới 2 đoạn đó:
 
 
 
+`eax = Packed(0x014cec81) ^ Original(0xb6e62e17) = 0xb7aac296`
 
 
