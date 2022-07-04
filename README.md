@@ -1591,8 +1591,62 @@ Trong trường hợp này, return `eax` sẽ sử dụng giải mã cho đoạn
 
 Và vì 1 lí do là sau khi xor eax với `.text` ở packed xong thì đoạn đó sẽ trở thành đoạn ở original, nên là mình dùng HxD để trace tới 2 đoạn đó:
 
+Original.exe:
 
+![image](https://user-images.githubusercontent.com/88520787/177203763-e961f1bc-7a91-46f8-a7fc-22a0887681d0.png)
+
+Packed.exe:
+
+![image](https://user-images.githubusercontent.com/88520787/177203808-b34e92a7-c96b-444c-ae19-f376cec0d45d.png)
 
 `eax = Packed(0x014cec81) ^ Original(0xb6e62e17) = 0xb7aac296`
 
+Và vì có `eax`, `ebx` cố định nên mình có thể brutefroce để tìm ebx:
 
+```c
+#include <iostream>
+using namespace std;
+
+unsigned int  rol(unsigned int x, int count) {
+	unsigned int num1 = (x << count) & 4294967295;
+	unsigned int num2 = x >> (32 - count);
+
+	return num1 | num2;
+}
+unsigned int ror(unsigned int x, int count) {
+	return rol(x, 32 - count);
+}
+//funtion : internet
+
+int main() {
+	unsigned int ans;
+
+	for (ans = 0; ans < 0xffffffff; ans++) {
+		unsigned int ebx = ans;
+		unsigned int eax = 0xb7aac296;
+		unsigned int al = eax & 0xff;
+
+		ebx = rol(ebx, al % 32);
+		eax = eax ^ ebx;
+		unsigned int bh = (ebx & 0xffff) >> 8;
+		eax = ror(eax, bh % 32);
+
+		if (eax == 0x5a5a7e05)
+			printf("ebx : 0x%08x\n", ans);
+	}
+
+	return 0;
+}
+```
+```
+ebx : 0xa1beee22
+ebx : 0xc263a2cb
+```
+Có 2 giá trị hợp lí, mình đã thử cả 2, thay vào `eax` và `ebx` tại lệnh tại vị trí `0040921F`:
+
+![image](https://user-images.githubusercontent.com/88520787/177204711-87e627af-7aaa-405c-b3ff-f24b6f108e7b.png)
+
+Cho chương trình chạy:
+
+![image](https://user-images.githubusercontent.com/88520787/177204732-b09fcbae-7022-4577-9eb6-14b225bb53d8.png)
+(Tham khảo)
