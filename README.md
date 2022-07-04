@@ -1649,4 +1649,5 @@ Có 2 giá trị hợp lí, mình đã thử cả 2, thay vào `eax` và `ebx` t
 Cho chương trình chạy:
 
 ![image](https://user-images.githubusercontent.com/88520787/177204732-b09fcbae-7022-4577-9eb6-14b225bb53d8.png)
+Password: `From_GHL2_!!`
 (Tham khảo)
