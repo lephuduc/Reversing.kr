@@ -1648,6 +1648,537 @@ Cho chương trình chạy:
 Password: `From_GHL2_!!`
 (Tham khảo)
 
-## WindowsKernel - 220pts
+## WindowKernel - 220pts
 
-adu ma bua viet bai nay 2 lan quen commit:))
+### Overview
+
+![](https://i.imgur.com/LykQYNo.png)
+
+![](https://i.imgur.com/eUpDHNu.png)
+
+![](https://i.imgur.com/erQ3Bmj.png)
+
+![](https://i.imgur.com/ldH9Dty.png)
+
+![](https://i.imgur.com/28ORsYB.png)
+
+
+### Approach
+Check file `WindowKernel.exe` bằng DiE và mở bằng ida:
+
+![](https://i.imgur.com/7dcnwSs.png)
+
+```c=
+INT_PTR __stdcall DialogFunc(HWND hWnd, UINT a2, WPARAM a3, LPARAM a4)
+{
+  if ( a2 == 272 )
+  {
+    SetDlgItemTextW(hWnd, 1001, L"Wait.. ");
+    SetTimer(hWnd, 0x464u, 0x3E8u, 0);
+    return 1;
+  }
+  if ( a2 != 273 )
+  {
+    if ( a2 == 275 )
+    {
+      KillTimer(hWnd, 0x464u);
+      sub_401310();
+      return 1;
+    }
+    return 0;
+  }
+  if ( (unsigned __int16)a3 == 2 )
+  {
+    SetDlgItemTextW(hWnd, 1001, L"Wait.. ");
+    sub_401490();
+    EndDialog(hWnd, 2);
+    return 1;
+  }
+  if ( (unsigned __int16)a3 == 1002 )
+  {
+    if ( HIWORD(a3) == 1024 )
+    {
+      Sleep(0x1F4u);
+      return 1;
+    }
+    return 1;
+  }
+  if ( (unsigned __int16)a3 != 1003 )
+    return 0;
+  sub_401110(hWnd);
+  return 1;
+}
+```
+
+Nếu xem các hàm lướt qua thì các bạn có thể biết là `sub_401310();` và `sub_401490();` sẽ không có gì đặc biệt ngoài báo lỗi và check các thứ.
+
+Riêng hàm `sub_401110(hWnd);` sẽ có chổ `Correct!`
+
+```c=
+HWND __thiscall sub_401110(HWND hDlg)
+{
+  HWND result; // eax
+  HWND v3; // eax
+  HWND v4; // eax
+  HWND DlgItem; // eax
+  WCHAR String[256]; // [esp+8h] [ebp-204h] BYREF
+
+  GetDlgItemTextW(hDlg, 1003, String, 512);
+  if ( lstrcmpW(String, L"Enable") )
+  {
+    result = (HWND)lstrcmpW(String, L"Check");
+    if ( !result )
+    {
+      if ( sub_401280(0x2000) == 1 )
+        MessageBoxW(hDlg, L"Correct!", L"Reversing.Kr", 0x40u);
+      else
+        MessageBoxW(hDlg, L"Wrong", L"Reversing.Kr", 0x10u);
+      SetDlgItemTextW(hDlg, 1002, &word_4021F0);
+      DlgItem = GetDlgItem(hDlg, 1002);
+      EnableWindow(DlgItem, 0);
+      return (HWND)SetDlgItemTextW(hDlg, 1003, L"Enable");
+    }
+  }
+  else if ( sub_401280(4096) )
+  {
+    v3 = GetDlgItem(hDlg, 1002);
+    EnableWindow(v3, 1);
+    SetDlgItemTextW(hDlg, 1003, L"Check");
+    SetDlgItemTextW(hDlg, 1002, &word_4021F0);
+    v4 = GetDlgItem(hDlg, 1002);
+    return SetFocus(v4);
+  }
+  else
+  {
+    return (HWND)MessageBoxW(hDlg, L"Device Error", L"Reversing.Kr", 0x10u);
+  }
+  return result;
+}
+```
+
+Theo như mình debug được thì `lstrcmpW(String, L"Enable")` và `lstrcmpW(String, L"Check");` sẽ là lúc mà mình bấm nút "Enable" cùa file `WindowKernel.exe`.
+
+Mình chỉ để ý đến hàm `sub_401280(0x2000) == 1`, để kiểm tra điều kiện và trả về giá trị đúng để in ra "Correct!":
+
+```c=
+int __usercall sub_401280@<eax>(HWND a1@<edi>, DWORD dwIoControlCode)
+{
+  HANDLE FileW; // esi
+  DWORD BytesReturned; // [esp+4h] [ebp-8h] BYREF
+  int OutBuffer; // [esp+8h] [ebp-4h] BYREF
+
+  FileW = CreateFileW(L"\\\\.\\RevKr", 0xC0000000, 0, 0, 3u, 0, 0);
+  if ( FileW == (HANDLE)-1 )
+  {
+    MessageBoxW(a1, L"[Error] CreateFile", L"Reversing.Kr", 0x10u);
+    return 0;
+  }
+  else if ( DeviceIoControl(FileW, dwIoControlCode, 0, 0, &OutBuffer, 4u, &BytesReturned, 0) )
+  {
+    CloseHandle(FileW);
+    return OutBuffer;
+  }
+  else
+  {
+    MessageBoxW(a1, L"[Error] DeviceIoControl", L"Reversing.Kr", 0x10u);
+    return 0;
+  }
+}
+```
+Ở đây có đoạn nó tạo file và để cho nó trả về 1 thì mình để ý chổ này:
+
+```c
+DeviceIoControl(FileW, dwIoControlCode, 0, 0, &OutBuffer, 4u, &BytesReturned, 0)
+```
+Cơ bản thì nó là viết tắt của Device In Out Control, quay lại check file `WinKer.sys`:
+
+```c=
+NTSTATUS __stdcall DriverEntry(_DRIVER_OBJECT *DriverObject, PUNICODE_STRING RegistryPath)
+{
+  int v3; // edi
+  PDEVICE_OBJECT v4; // ecx
+  char *v5; // et1
+  char *v6; // et1
+  char *v7; // et1
+  char v8; // al
+  struct _KDPC *v9; // esi
+  char *v10; // et1
+  struct _UNICODE_STRING DestinationString; // [esp+Ch] [ebp-134h] BYREF
+  union _LARGE_INTEGER Interval; // [esp+14h] [ebp-12Ch] BYREF
+  PDEVICE_OBJECT DeviceObject; // [esp+1Ch] [ebp-124h] BYREF
+  PVOID P; // [esp+20h] [ebp-120h]
+  CCHAR Number[4]; // [esp+24h] [ebp-11Ch]
+  struct _OSVERSIONINFOW VersionInformation; // [esp+28h] [ebp-118h] BYREF
+
+  DbgSetDebugFilterState(0x65u, 3u, 1u);
+  DbgPrint("Driver Load!! \n");
+  DriverObject->DriverUnload = (PDRIVER_UNLOAD)sub_1131C;
+  dword_13030 = 0;
+  VersionInformation.dwOSVersionInfoSize = 276;
+  if ( RtlGetVersion(&VersionInformation) )
+  {
+    MajorVersion = VersionInformation.dwMajorVersion;
+    MinorVersion = VersionInformation.dwMinorVersion;
+  }
+  else
+  {
+    PsGetVersion(&MajorVersion, &MinorVersion, 0, 0);
+  }
+  RtlInitUnicodeString(&DestinationString, "\\");
+  P = (PVOID)IoCreateDevice(DriverObject, 4u, &DestinationString, 0x22u, 0, 0, &DeviceObject);
+  if ( (int)P >= 0 )
+  {
+    RtlInitUnicodeString(&SymbolicLinkName, L"\\DosDevices\\RevKr");
+    v3 = IoCreateSymbolicLink(&SymbolicLinkName, &DestinationString);
+    if ( v3 >= 0 )
+    {
+      v4 = DeviceObject;
+      DriverObject->MajorFunction[14] = (PDRIVER_DISPATCH)sub_11288;
+      DriverObject->MajorFunction[0] = (PDRIVER_DISPATCH)sub_112F8;
+      DriverObject->MajorFunction[2] = (PDRIVER_DISPATCH)sub_112F8;
+      *(_DWORD *)v4->DeviceExtension = 0;
+      SystemArgument2 = DeviceObject->DeviceExtension;
+      *(_DWORD *)SystemArgument2 = DeviceObject;
+      v5 = *(char **)&KeNumberProcessors;
+      ::P = ExAllocatePool(NonPagedPool, 4 * *v5);
+      KeInitializeDpc(&DeviceObject->Dpc, sub_11266, DeviceObject);
+      v6 = *(char **)&KeNumberProcessors;
+      P = ExAllocatePool(NonPagedPool, 32 * *v6);
+      if ( P )
+      {
+        v7 = *(char **)&KeNumberProcessors;
+        Interval.QuadPart = -10000000i64;
+        v8 = *v7;
+        Number[0] = 0;
+        if ( v8 > 0 )
+        {
+          do
+          {
+            v9 = (struct _KDPC *)((char *)P + 32 * Number[0]);
+            KeInitializeDpc(v9, sub_113E8, 0);
+            KeSetTargetProcessorDpc(v9, Number[0]);
+            KeInsertQueueDpc(v9, 0, 0);
+            KeDelayExecutionThread(0, 0, &Interval);
+            v10 = *(char **)&KeNumberProcessors;
+            ++Number[0];
+          }
+          while ( Number[0] < *v10 );
+        }
+        ExFreePoolWithTag(P, 0);
+      }
+      return 0;
+    }
+    else
+    {
+      IoDeleteDevice(DriverObject->DeviceObject);
+      return v3;
+    }
+  }
+  else
+  {
+    DbgPrint("IoCreateDevice Error\n");
+    return (NTSTATUS)P;
+  }
+}
+```
+
+Mình thấy đoạn `DbgPrint("IoCreateDevice Error\n");` nên cơ bản là cái file này sẽ tạo `IoCreateDevice` rồi check và gửi thông tin cho file `WindowKernel`.
+
+Check kĩ file, mình thấy có vài hàm khả nghi:
+
+```c=
+int __stdcall sub_111DC(char a1)
+{
+  int result; // eax
+  bool v2; // zf
+
+  result = 1;
+  if ( dword_1300C != 1 )
+  {
+    switch ( dword_13034 )
+    {
+      case 0:
+      case 2:
+      case 4:
+      case 6:
+        goto LABEL_3;
+      case 1:
+        v2 = a1 == -91;
+        goto LABEL_6;
+      case 3:
+        v2 = a1 == -110;
+        goto LABEL_6;
+      case 5:
+        v2 = a1 == -107;
+LABEL_6:
+        if ( !v2 )
+          goto LABEL_7;
+LABEL_3:
+        ++dword_13034;
+        break;
+      case 7:
+        if ( a1 == -80 )
+          dword_13034 = 100;
+        else
+LABEL_7:
+          dword_1300C = 1;
+        break;
+      default:
+        result = sub_11156(a1);
+        break;
+    }
+  }
+  return result;
+}
+```
+
+```c=
+int __stdcall sub_11156(char a1)
+{
+  int result; // eax
+  bool v2; // zf
+  char v3; // [esp+8h] [ebp+8h]
+
+  v3 = a1 ^ 0x12;
+  result = dword_13034 - 100;
+  switch ( dword_13034 )
+  {
+    case 'd':
+    case 'f':
+    case 'h':
+    case 'j':
+      goto LABEL_2;
+    case 'e':
+      v2 = v3 == -78;
+      goto LABEL_4;
+    case 'g':
+      v2 = v3 == -123;
+      goto LABEL_4;
+    case 'i':
+      v2 = v3 == -93;
+LABEL_4:
+      if ( !v2 )
+        goto LABEL_5;
+LABEL_2:
+      ++dword_13034;
+      break;
+    case 'k':
+      if ( v3 == -122 )
+        dword_13034 = 200;
+      else
+LABEL_5:
+        dword_1300C = 1;
+      break;
+    default:
+      result = sub_110D0(v3);
+      break;
+  }
+  return result;
+}
+```
+
+```c=
+int __stdcall sub_110D0(char a1)
+{
+  int result; // eax
+  char v2; // cl
+  bool v3; // zf
+
+  result = dword_13034 - 200;
+  v2 = a1 ^ 5;
+  switch ( dword_13034 )
+  {
+    case 200:
+    case 202:
+    case 204:
+    case 206:
+      goto LABEL_2;
+    case 201:
+      v3 = v2 == -76;
+      goto LABEL_4;
+    case 203:
+    case 205:
+      v3 = v2 == -113;
+LABEL_4:
+      if ( v3 )
+        goto LABEL_2;
+      goto LABEL_10;
+    case 207:
+      if ( v2 != -78 )
+        goto LABEL_10;
+      dword_13024 = 1;
+LABEL_2:
+      ++dword_13034;
+      break;
+    case 208:
+      dword_13024 = 0;
+LABEL_10:
+      dword_1300C = 1;
+      break;
+    default:
+      return result;
+  }
+  return result;
+}
+```
+
+Cả 3 hàm này đều dùng chung 1 biến count là `dword_13024` và nó sẽ là duyệt từ đầu input tới cuối.
+
+Quay trở lại hàm đầu tiên, thì biến count bắt đầu từ 0 => hàm check đầu tiên, tiếp theo nó set `count = 100` và qua hàm thứ 2 thì `count-100`và dử dụng nó => xem như input được chia thành 3 đoạn và kiểm tra bằng 3 hàm.
+
+Xem đầu vào của hàm đầu tiên:
+
+```c=
+void __stdcall sub_11266(_KDPC *Dpc, PVOID DeferredContext, PVOID SystemArgument1, PVOID SystemArgument2)
+{
+  char v4; // al
+
+  v4 = READ_PORT_UCHAR((PUCHAR)0x60);
+  first(v4);
+}
+```
+
+Nó nhận tính hiệu từ API `READ_PORT_UCHAR` , nếu tra trên mạng thì nó sẽ nhận char từ port 60 và trả về ` scancodes`.
+
+Các bạn xem `scancodes-keys map table` [tại đây](https://wiki.osdev.org/PS/2_Keyboard).
+
+Dựa theo tín hiệu và hàm check đầu tiên, mình tìm được 4 kí tự đầu:
+
+```c=
+int __stdcall first(char a1)
+{
+  int result; // eax
+  bool v2; // zf
+
+  result = 1;
+  if ( dword_1300C != 1 )
+  {
+    switch ( count )
+    {
+      case 0:
+      case 2:
+      case 4:
+      case 6:
+        goto LABEL_3;
+      case 1:
+        v2 = a1 == (char)0xA5;                  // K realeased (phím K)
+        goto LABEL_6;
+      case 3:
+        v2 = a1 == (char)0x92;                  // E realeased
+        goto LABEL_6;
+      case 5:
+        v2 = a1 == (char)0x95;                  // Y realeased
+LABEL_6:
+        if ( !v2 )
+          goto LABEL_7;
+LABEL_3:
+        ++count;
+        break;
+      case 7:
+        if ( a1 == (char)0xB0 )                 // B realeased
+          count = 100;
+        else
+LABEL_7:
+          dword_1300C = 1;
+        break;
+      default:
+        result = second(a1);
+        break;
+    }
+  }
+  return result;
+}
+```
+Tương tự:
+
+```c=
+int __stdcall second(char a1)
+{
+  int result; // eax
+  bool v2; // zf
+  char v3; // [esp+8h] [ebp+8h]
+
+  v3 = a1 ^ 0x12;
+  result = count - 100;
+  switch ( count )
+  {
+    case 'd':
+    case 'f':
+    case 'h':
+    case 'j':
+      goto LABEL_2;
+    case 'e':
+      v2 = v3 == (char)0xB2;                    // 0x12^0xB2 = 0xA0 => D realeased
+      goto LABEL_4;
+    case 'g':
+      v2 = v3 == (char)0x85;                    // 0x12^0x85 = 0x97 => I realeased
+      goto LABEL_4;
+    case 'i':
+      v2 = v3 == (char)0xA3;                    // 0x12^0xA3 = 0xB1 => N realeased
+LABEL_4:
+      if ( !v2 )
+        goto LABEL_5;
+LABEL_2:
+      ++count;
+      break;
+    case 'k':
+      if ( v3 == (char)0x86 )                   // 0x12^0x86 = 0x94 => T realeased
+        count = 200;
+      else
+LABEL_5:
+        dword_1300C = 1;
+      break;
+    default:
+      result = last(v3);
+      break;
+  }
+  return result;
+}
+```
+```c=
+int __stdcall last(char a1)
+{
+  int result; // eax
+  char v2; // cl
+  bool v3; // zf
+
+  result = count - 200;
+  v2 = a1 ^ 5;
+  switch ( count )
+  {
+    case 200:
+    case 202:
+    case 204:
+    case 206:
+      goto LABEL_2;
+    case 201:
+      v3 = v2 == (char)0xB4;                    // 0xB4^0x12^5 = 0xA3 => T
+      goto LABEL_4;
+    case 203:                                   // 0x8F^0x12^5 = 0x98 => O realeased
+    case 205:                                   // 0x8F^0x12^5 = 0x98 => O realeased
+      v3 = v2 == (char)0x8F;
+LABEL_4:
+      if ( v3 )
+        goto LABEL_2;
+      goto LABEL_10;
+    case 207:
+      if ( v2 != (char)0xB2 )                   // 0xB2^0x12^5 = 0xA5 => K realeased
+        goto LABEL_10;
+      dword_13024 = 1;
+LABEL_2:
+      ++count;
+      break;
+    case 208:
+      dword_13024 = 0;
+LABEL_10:
+      dword_1300C = 1;
+      break;
+    default:
+      return result;
+  }
+  return result;
+}
+```
+
+Theo chỉ dẫn trong file readme.txt, tìm được key:`keybdinthook`
+
