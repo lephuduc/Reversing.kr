@@ -9,7 +9,7 @@
 
 ## Easy Crack - 100pts
 
-Mở file lên thì ta biết đây là 1 file check password
+Mở file lên thì ta biết đây là 1 file check password.
 
 ![image](https://user-images.githubusercontent.com/88520787/174267344-c4849fc3-4968-4beb-b854-f8a939883420.png)
 
